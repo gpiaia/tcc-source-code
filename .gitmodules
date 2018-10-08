@@ -1,3 +1,7 @@
 [submodule "ivPID"]
 	path = ivPID
 	url = https://github.com/ivmech/ivPID.git
+[submodule "MPU6050Python"]
+	path = MPU6050Python
+	url = C:/Users/Gpiaia/Google Drive/Eng. de Controle e Automacao/TCC/Code/MPU6050Python
+	branch = refs/heads/master

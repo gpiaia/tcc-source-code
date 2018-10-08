@@ -1,10 +1,16 @@
 #!/usr/bin/python3
 import smbus
 import math
- 
+import time
+
 # Register
 power_mgmt_1 = 0x6b
 power_mgmt_2 = 0x6c
+
+bus = smbus.SMBus(1) # bus = smbus.SMBus(0) fuer Revision 1
+address = 0x68       # via i2cdetect
+# Aktivieren, um das Modul ansprechen zu koennen
+bus.write_byte_data(address, power_mgmt_1, 0)
  
 def read_byte(reg):
     return bus.read_byte_data(address, reg)
@@ -32,39 +38,26 @@ def get_y_rotation(x,y,z):
 def get_x_rotation(x,y,z):
     radians = math.atan2(y, dist(x,z))
     return math.degrees(radians)
+
+def get_z_rotation(x,y,z):
+    radians = math.atan2(z, dist(x,y))
+    return math.degrees(radians)
  
-bus = smbus.SMBus(1) # bus = smbus.SMBus(0) fuer Revision 1
-address = 0x68       # via i2cdetect
  
-# Aktivieren, um das Modul ansprechen zu koennen
-bus.write_byte_data(address, power_mgmt_1, 0)
- 
-print "Gyroskop"
-print "--------"
- 
-gyroskop_xout = read_word_2c(0x43)
-gyroskop_yout = read_word_2c(0x45)
-gyroskop_zout = read_word_2c(0x47)
- 
-print "gyroskop_xout: ", ("%5d" % gyroskop_xout), " skaliert: ", (gyroskop_xout / 131)
-print "gyroskop_yout: ", ("%5d" % gyroskop_yout), " skaliert: ", (gyroskop_yout / 131)
-print "gyroskop_zout: ", ("%5d" % gyroskop_zout), " skaliert: ", (gyroskop_zout / 131)
- 
-print
-print "Beschleunigungssensor"
-print "---------------------"
- 
-beschleunigung_xout = read_word_2c(0x3b)
-beschleunigung_yout = read_word_2c(0x3d)
-beschleunigung_zout = read_word_2c(0x3f)
- 
-beschleunigung_xout_skaliert = beschleunigung_xout / 16384.0
-beschleunigung_yout_skaliert = beschleunigung_yout / 16384.0
-beschleunigung_zout_skaliert = beschleunigung_zout / 16384.0
- 
-print "beschleunigung_xout: ", ("%6d" % beschleunigung_xout), " skaliert: ", beschleunigung_xout_skaliert
-print "beschleunigung_yout: ", ("%6d" % beschleunigung_yout), " skaliert: ", beschleunigung_yout_skaliert
-print "beschleunigung_zout: ", ("%6d" % beschleunigung_zout), " skaliert: ", beschleunigung_zout_skaliert
- 
-print "X Rotation: " , get_x_rotation(beschleunigung_xout_skaliert, beschleunigung_yout_skaliert, beschleunigung_zout_skaliert)
-print "Y Rotation: " , get_y_rotation(beschleunigung_xout_skaliert, beschleunigung_yout_skaliert, beschleunigung_zout_skaliert)
+def angular_position():
+    bus.write_byte_data(address, 0x3b, 1)
+
+    accelerometer_xout = read_word_2c(0x43)
+    accelerometer_yout = read_word_2c(0x45)
+    accelerometer_zout = read_word_2c(0x47)
+
+    return (accelerometer_xout, accelerometer_yout,accelerometer_zout)
+
+while 1:
+    (a, b, c) = angular_position()
+    print('x = {0}'.format(a))
+    print('y = {0}'.format(b))
+    print('z = {0}'.format(c))
+    time.sleep(1)
+
+
