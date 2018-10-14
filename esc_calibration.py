@@ -7,7 +7,7 @@ import RPi.GPIO as GPIO
 GPIO.setmode(GPIO.BCM)
 
 # Connect to pigpio
-pi = pigpio.pi() 
+pi = pigpio.pi()
 
 # Calibrate ESC
 ESC_GPIOz = 12
@@ -23,4 +23,3 @@ time.sleep(4)
 pi.set_servo_pulsewidth(ESC_GPIOx, 1000)
 pi.set_servo_pulsewidth(ESC_GPIOy, 1000)
 pi.set_servo_pulsewidth(ESC_GPIOz, 1000)
-

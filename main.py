@@ -16,8 +16,7 @@ import RPi.GPIO as GPIO
 from ivPID import PID
 from MPU6050Python.MPU6050 import MPU6050
 from kalman import *
-#import os
-#os.system('sudo pigpiod')
+import sys
 
 #  Rasp Pins
 ESC_GPIOz = 12
@@ -125,6 +124,13 @@ def PIDController(P, I, D, SetPoint):
                              'Posicaoz': float(displacement['z']),
                              'Tempo': time.time()})
 
+        print('X position: {0} and PID action: {1}'.format(
+            displacement['x'], pidx.output))
+        print('Y position: {0} and PID action: {1}'.format(
+            displacement['y'], pidy.output))
+        print('Z position: {0} and PID action: {1}'.format(
+            displacement['z'], pidz.output))
+
         if (pidx.output >= 360):
             outputx = HPW
         elif (pidz.output < 0):
@@ -159,19 +165,22 @@ def RelayAutoTune():
 
 
 def main():
+    argList = sys.argv
+
     StopMotors()
-    time.sleep(2)
-    StartMotors()
+    if int(argList[5])== 1:  
+        time.sleep(2)
+        StartMotors()
 
     with open(r'logs.csv', 'a') as csvfile:
         fieldnames = ['Posicaox', 'Posicaoy', 'Posicaoz', 'Tempo']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
 
-    P = {'x': 1, 'y': 1, 'z': 1}
-    I = {'x': 0.1, 'y': 0.1, 'z': 0.1}
-    D = {'x': 0, 'y': 0, 'z': 0}
-    SetPoint = {'x': 45, 'y': 45, 'z': 45}
+    P = {'x': 1, 'y': 1, 'z': float(argList[1])}
+    I = {'x': 0.1, 'y': 0.1, 'z': float(argList[2])}
+    D = {'x': 0, 'y': 0, 'z': float(argList[3])}
+    SetPoint = {'x': 0, 'y': 0, 'z': float(argList[4])}
 
     PIDController(P, I, D, SetPoint)
 
