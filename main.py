@@ -56,7 +56,7 @@ def StartMotors():
     pi.set_servo_pulsewidth(ESC_GPIOy, LPW)
     time.sleep(5)
     pi.set_servo_pulsewidth(ESC_GPIOz, LPW)
-    time.sleep(20)
+    time.sleep(40)
 
 
 def StopMotors():
@@ -116,32 +116,17 @@ def PIDController(P, I, D, SetPoint):
         pidy.update(displacement['y'])
         pidz.update(displacement['z'])
 
-        with open(r'logs.csv', 'a') as csvfile:
-            fieldnames = ['Posicaox', 'Posicaoy', 'Posicaoz', 'Tempo']
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            writer.writerow({'Posicaox': float(displacement['x']),
-                             'Posicaoy': float(displacement['y']),
-                             'Posicaoz': float(displacement['z']),
-                             'Tempo': time.time()})
-
-        print('X position: {0} and PID action: {1}'.format(
-            displacement['x'], pidx.output))
-        print('Y position: {0} and PID action: {1}'.format(
-            displacement['y'], pidy.output))
-        print('Z position: {0} and PID action: {1}'.format(
-            displacement['z'], pidz.output))
-
         if (pidx.output >= 360):
             outputx = HPW
         elif (pidz.output < 0):
-            outputx = StopPW
+            outputx = LPW
         else:
             outputx = LPW + pidx.output
 
         if (pidy.output >= 360):
             outputy = HPW
         elif (pidy.output < 0):
-            outputy = StopPW
+            outputy = LPW
         else:
             outputy = LPW + pidy.output
 
@@ -155,6 +140,23 @@ def PIDController(P, I, D, SetPoint):
         pi.set_servo_pulsewidth(ESC_GPIOx, int(outputx))
         pi.set_servo_pulsewidth(ESC_GPIOy, int(outputy))
         pi.set_servo_pulsewidth(ESC_GPIOz, int(outputz))
+
+        with open(r'data.csv', 'a') as csvfile:
+            fieldnames = ['Posicaox', 'Posicaoy', 'Posicaoz',
+                          'SetPointx', 'SetPointy', 'SetPointz', 
+                          'Largura de Pulso x', 'Largura de Pulso y', 'Largura de Pulso z',
+                          'Tempo']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writerow({'Posicaox': float(displacement['x']),
+                             'Posicaoy': float(displacement['y']),
+                             'Posicaoz': float(displacement['z']),
+                             'SetPointx': float(SetPoint['x']),
+                             'SetPointy': float(SetPoint['y']),
+                             'SetPointz': float(SetPoint['z']),
+                             'Largura de Pulso x': int(outputx),
+                             'Largura de Pulso y': int(outputy),
+                             'Largura de Pulso z': int(outputz),
+                             'Tempo': time.time()})
 
         time.sleep(PIDUpdateTime)
 
@@ -172,15 +174,21 @@ def main():
         time.sleep(2)
         StartMotors()
 
-    with open(r'logs.csv', 'a') as csvfile:
-        fieldnames = ['Posicaox', 'Posicaoy', 'Posicaoz', 'Tempo']
+    with open(r'data.csv', 'a') as csvfile:
+        fieldnames = ['Posicaox', 'Posicaoy', 'Posicaoz',
+                      'SetPointx', 'SetPointy', 'SetPointz', 
+                      'Largura de Pulso x', 'Largura de Pulso y', 'Largura de Pulso z',
+                      'Tempo']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
 
     P = {'x': 1, 'y': 1, 'z': float(argList[1])}
-    I = {'x': 0.1, 'y': 0.1, 'z': float(argList[2])}
+    I = {'x': 0, 'y': 0, 'z': float(argList[2])}
     D = {'x': 0, 'y': 0, 'z': float(argList[3])}
     SetPoint = {'x': 0, 'y': 0, 'z': float(argList[4])}
+
+    print('Controle Iniciando em 5s')
+    time.sleep(2)
 
     PIDController(P, I, D, SetPoint)
 

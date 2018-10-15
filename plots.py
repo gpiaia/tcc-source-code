@@ -10,24 +10,27 @@ z = []
 sp = []
 i = 0
 
-with open('logs.csv', 'r') as csvfile:
+with open('data_PID.csv', 'r') as csvfile:
     plots = csv.DictReader(csvfile, delimiter=',')
     for row in plots:
         y.append(float(row['Posicaoy']))
         x.append(float(row['Posicaox']))
         z.append(float(row['Posicaoz']))
-        t.append(float(row['Tempo']) - 1539481500.516969)
+        t.append(float(row['Tempo']) -1539540499.0584)
         if i == 0:
             sp.append(float(0))
         else:
             sp.append(float(45))
         i = i + 1
 
-plt.plot(t, x, t, y, t, z, t, sp)
-
+#plt.plot(t, x, label='x') #t, y, t, z, t, sp)
+#plt.plot(t, y, label='y')
+plt.plot(t, z, label='z')
+plt.plot(t, sp, label='Referência')
 plt.xlabel('Tempo [s]')
 plt.ylabel('Posição [°]')
-plt.title('Posição em Z')
+plt.title('Posição Angular em Malha Fechada com Controlador PID Sintonizado via Ziegler-Nichols')
+plt.legend(loc=3)
 plt.grid(True)
 plt.savefig("position.png")
 plt.show()
