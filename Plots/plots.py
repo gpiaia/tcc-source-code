@@ -10,21 +10,21 @@ z = []
 sp = []
 i = 0
 
-with open('data_PID.csv', 'r') as csvfile:
+with open('../Datasets/data_PID.csv', 'r') as csvfile:
     plots = csv.DictReader(csvfile, delimiter=',')
     for row in plots:
         y.append(float(row['Posicaoy']))
         x.append(float(row['Posicaox']))
         z.append(float(row['Posicaoz']))
-        t.append(float(row['Tempo']) -1539540499.0584)
+        t.append(float(row['Tempo']) -1539538801.822468)
         if i == 0:
             sp.append(float(0))
         else:
             sp.append(float(45))
-        i = i + 1
+        i = 1
 
-#plt.plot(t, x, label='x') #t, y, t, z, t, sp)
-#plt.plot(t, y, label='y')
+plt.plot(t, x, label='x') #t, y, t, z, t, sp)
+plt.plot(t, y, label='y')
 plt.plot(t, z, label='z')
 plt.plot(t, sp, label='Referência')
 plt.xlabel('Tempo [s]')
