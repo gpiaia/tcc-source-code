@@ -27,62 +27,55 @@ class GYR_Integration(object):
         self.dt = dt
         self.verbose = verbose
         self.Gyro_Data = []
-        self.list_measurements = []
         self.offset_GYRO = offset_GYRO
+        gyro_data = sensor.get_gyro_data()
+        """Read and update measurement from MPU6050."""
+        self.latest_measurement = [gyro_data['x'], gyro_data['y'], gyro_data['z']]
+        self.wm = Vector(self.latest_measurement[0] - self.offset_GYRO[0],
+                         self.latest_measurement[1] - self.offset_GYRO[1],
+                         self.latest_measurement[2] - self.offset_GYRO[2])
 
         # initial state: assume resting, Z downwards, still --------------------
         # no rotation to Earth referential
         self.o = normalise_quaternion(Quaternion(1, 0.0001, 0.0001, 0.0001))
-        # reference vectors; can be used to print assumed orientation ----------
-        self.X_IMU_ref_IMU = Vector(1, 0, 0)
-        self.Y_IMU_ref_IMU = Vector(0, 1, 0)
-        self.Z_IMU_ref_IMU = Vector(0, 0, 1)
-        self.read_and_update_measurement()
-        self.cycle = 0
 
-    def predict_state(self):
-        """predict quaternion orientation. Use a First order finite difference
-        for integration of sensor motion. The integration input is the
-        gyroscope signal"""
-
-        qDelta = angular_rate_to_quaternion_rotation(self.wm, self.dt)
-        self.o = quaternion_product(self.o, qDelta)
-
-    def read_and_update_measurement(self):
-        """Read and update measurement from MPU6050."""
-
-        self.latest_measurement = [sensor.get_gyro_data()['x'], sensor.get_gyro_data()['y'],sensor.get_gyro_data()['z']]
-        self.wm = Vector(self.latest_measurement[0] - self.offset_GYRO[0],
-                            self.latest_measurement[1] - self.offset_GYRO[1],
-                            self.latest_measurement[2] - self.offset_GYRO[2])
-
-        self.list_measurements.append(self.latest_measurement)
 
     def perform_one_iteration(self):
         """Perform one integration iteration: read, integrate to compute update,
         and print if necessary."""
-        loop_init = time.time()
-        self.predict_state()
-        predtime = int(time.time()*1000.0)- int(loop_init*1000.0)
-        self.read_and_update_measurement()
-        updatetime = int(time.time()*1000.0)- int(loop_init*1000.0)
+
+        """predict quaternion orientation. Use a First order finite difference
+        for integration of sensor motion. The integration input is the
+        gyroscope signal"""
+        qDelta = angular_rate_to_quaternion_rotation(self.wm, self.dt)
+        self.o = quaternion_product(self.o, qDelta)
+
+        """Read and update measurement from MPU6050."""
+        gyro_data = sensor.get_gyro_data()
+        acc_data = sensor.get_accel_data()
+        
+        self.latest_measurement = [(gyro_data['x'] - self.offset_GYRO[0]), (gyro_data['y'] - self.offset_GYRO[1]),
+                                   (gyro_data['z'] - self.offset_GYRO[2])]
+        self.wm = Vector(self.latest_measurement[0],
+                         self.latest_measurement[1],
+                         self.latest_measurement[2])
+
+        # print('{0},{1},{2}'.format(self.latest_measurement[0],
+        #                            self.latest_measurement[1],
+        #                            self.latest_measurement[2]))
         # normalise orientation quaternion: this can be necessary if some noise
+
         # due to for exemple nearly singular matrix that get inverted
         self.o = normalise_quaternion(self.o)
-        normatime = int(time.time()*1000.0)- int(loop_init*1000.0)
-        # if self.verbose > 0:
-        #     print("PRINT STATE AT END INTEGRATION CYCLE ###")
-        pos = self.print_state(self.o)
-        printtime = int(time.time()*1000.0)- int(loop_init*1000.0)
-        self.cycle += 1
-        #print('{0},{1},{2},{3}'.format(predtime, updatetime, normatime, printtime))
-        return pos
 
-    def print_state(self, o):
         """Print information about state of the quaternion"""
-        rpy = roll_pitch_yaw(o)
+        rpy = roll_pitch_yaw(self.o)
 
-        return((180/np.pi)*rpy[0], (180/np.pi)*rpy[1], (180/np.pi)*rpy[2])
+        return((180/np.pi)*rpy[0], (180/np.pi)*rpy[1], (180/np.pi)*rpy[2], 
+                self.latest_measurement[0], 
+                self.latest_measurement[1], 
+                self.latest_measurement[2],
+                acc_data['x'], acc_data['y'], acc_data['z'])
 
 
 def quaternion_product(p, q):
