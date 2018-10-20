@@ -1,7 +1,6 @@
 
 class Kalman:
 	
-	
 	def __init__(self, state_dim, obs_dim):
 		import numpy as np
 		self.state_dim = state_dim
