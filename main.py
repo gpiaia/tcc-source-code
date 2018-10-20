@@ -48,19 +48,19 @@ ky = Kalman(state_dim=9, obs_dim=3)
 kz = Kalman(state_dim=9, obs_dim=3)
 
 # determined by calibration: offset of the gyro; take away to reduce drift.
-offset_GYRO = [-1.610687, 0.908397, 0.305344]
+offset_GYRO = [((-1.601500-1.603053)/2), ((0.884710+0.885496)/2), ((0.328244+0.332608)/2)]
 
 GYR_Integration_Instance = GYR_Integration(dt=SampleTime, offset_GYRO=offset_GYRO, verbose=3)
 
-def Motors(Pulse):
+def Motors(Pulse, state):
     pi.set_servo_pulsewidth(ESC_GPIOx, int(Pulse['x']))
-    if (Pulse['x']==1000 and Pulse['y']==1000 and Pulse['z']==1000) :
+    if (state == 0) :
         time.sleep(5)
     pi.set_servo_pulsewidth(ESC_GPIOy, int(Pulse['y']))
-    if (Pulse['x']==1000 and Pulse['y']==1000 and Pulse['z']==1000):  
+    if (state == 0) :
         time.sleep(5)
-    pi.set_servo_pulsewidth(ESC_GPIOz, int(Pulse['z']))
-    if (Pulse['x']==1000 and Pulse['y']==1000 and Pulse['z']==1000) :   
+    pi.set_servo_pulsewidth(ESC_GPIOz, int(Pulse['z']))  
+    if (state == 0) :
         time.sleep(40)
 
 
@@ -84,11 +84,10 @@ def PIDController(P, I, D, SetPoint):
 
         #perform one gyro integration: read, update quaternion
         displacement = GYR_Integration_Instance.perform_one_iteration()
-        print('Posicao Angular (x, y, z): {0}'.format(displacement))
         
-        girox = np.r_[displacement[0], gyro_data['x'], accel_data['x']]
-        giroy = np.r_[displacement[1] ,gyro_data['y'], accel_data['x']]
-        giroz = np.r_[displacement[2] ,gyro_data['z'], accel_data['x']]
+        girox = np.r_[displacement[0], (gyro_data['x']-offset_GYRO[0]), accel_data['x']]
+        giroy = np.r_[displacement[1], (gyro_data['y']-offset_GYRO[1]), accel_data['y']]
+        giroz = np.r_[displacement[2], (gyro_data['z']-offset_GYRO[2]), accel_data['z']]
 
         kx.update(girox)
         ky.update(giroy)
@@ -97,7 +96,9 @@ def PIDController(P, I, D, SetPoint):
         kgirox = kx.predict()
         kgiroy = ky.predict()
         kgiroz = kz.predict()
-        
+
+        print('Posicao:{0},{1},{2}'.format(float(kgirox[0]), float(kgiroy[0]), float(kgiroz[0])))
+
         pidx.update(kgirox[0])
         pidy.update(kgiroy[0])
         pidz.update(kgiroz[0])
@@ -123,12 +124,15 @@ def PIDController(P, I, D, SetPoint):
         else:
             outputz = LPW['x'] + pidz.output
 
+        print('PID:{0},{1},{2}'.format(pidx.output, pidy.output, pidz.output))
+
         pidoutput = {'x': outputx, 'y': outputy, 'z':outputz} 
 
-        Motors(pidoutput)
+        Motors(pidoutput, 1)
 
         with open(r'data.csv', 'a') as csvfile:
             fieldnames = ['Posicaox', 'Posicaoy', 'Posicaoz',
+                          'kPosicaox', 'kPosicaoy', 'kPosicaoz',
                           'SetPointx', 'SetPointy', 'SetPointz', 
                           'Largura de Pulso x', 'Largura de Pulso y', 'Largura de Pulso z',
                           'Tempo']
@@ -136,6 +140,9 @@ def PIDController(P, I, D, SetPoint):
             writer.writerow({'Posicaox': float(displacement[0]),
                              'Posicaoy': float(displacement[1]),
                              'Posicaoz': float(displacement[2]),
+                             'kPosicaox': float(kgirox[0]),
+                             'kPosicaoy': float(kgiroy[0]),
+                             'kPosicaoz': float(kgiroz[0]),
                              'SetPointx': float(SetPoint['x']),
                              'SetPointy': float(SetPoint['y']),
                              'SetPointz': float(SetPoint['z']),
@@ -148,13 +155,14 @@ def PIDController(P, I, D, SetPoint):
 def main():
     argList = sys.argv
 
-    Motors(StopPW)
+    Motors(StopPW, 1)
     if int(argList[5])== 1:  
         time.sleep(2)
-        Motors(LPW)
+        Motors(LPW, 0)
 
     with open(r'data.csv', 'a') as csvfile:
         fieldnames = ['Posicaox', 'Posicaoy', 'Posicaoz',
+                      'kPosicaox', 'kPosicaoy', 'kPosicaoz',
                       'SetPointx', 'SetPointy', 'SetPointz', 
                       'Largura de Pulso x', 'Largura de Pulso y', 'Largura de Pulso z',
                       'Tempo']
@@ -177,4 +185,4 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt:
         print('Controle Interrompido pelo Usuario')
-        Motors(StopPW)
+        Motors(StopPW, 1)

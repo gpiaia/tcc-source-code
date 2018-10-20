@@ -1,4 +1,4 @@
-# scp pi@10.0.0.102:/home/pi/Code/logs.csv '/c/Users/Gpiaia/Google Drive/Eng. de Controle e Automacao/TCC/Code/logs.csv'
+#scp pi@10.0.0.102:/home/pi/Code/data.csv '/c/Users/Gpiaia/Google Drive/Eng. de Controle e Automacao/TCC/Code/data.csv'
 import matplotlib.pyplot as plt
 import numpy as np
 import csv
@@ -10,13 +10,13 @@ z = []
 sp = []
 i = 0
 
-with open('../Datasets/data_PID.csv', 'r') as csvfile:
+with open('../data.csv', 'r') as csvfile:
     plots = csv.DictReader(csvfile, delimiter=',')
     for row in plots:
         y.append(float(row['Posicaoy']))
         x.append(float(row['Posicaox']))
         z.append(float(row['Posicaoz']))
-        t.append(float(row['Tempo']) -1539538801.822468)
+        t.append(float(row['Tempo']) -1540045514.313028)
         if i == 0:
             sp.append(float(0))
         else:

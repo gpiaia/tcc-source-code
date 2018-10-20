@@ -47,7 +47,7 @@ class GYR_Integration(object):
 
         #if self.verbose > 2:
             #print("Obtained measurements in SI:")
-            #print("{0}, {1}, {2}".format((self.latest_measurement[0] - self.offset_GYRO[0]), 
+            # print("{0}, {1}, {2}".format((self.latest_measurement[0] - self.offset_GYRO[0]), 
             #                             (self.latest_measurement[1] - self.offset_GYRO[1]), 
             #                             (self.latest_measurement[2] - self.offset_GYRO[2])))
 
@@ -76,22 +76,6 @@ class GYR_Integration(object):
 
     def print_state(self, o):
         """Print information about state of the quaternion"""
+        rpy = roll_pitch_yaw(o)
 
-        current_X_IMU = apply_rotation_on_vector(o, self.X_IMU_ref_IMU)
-        current_Y_IMU = apply_rotation_on_vector(o, self.Y_IMU_ref_IMU)
-        current_Z_IMU = apply_rotation_on_vector(o, self.Z_IMU_ref_IMU)
-
-        #print("Print state of quaternion --------------------------------------------")
-
-        #print("state orientation: current X, Y, Z of the IMU, in referential Earth:")
-        
-        xpos = (180/np.pi)*np.arctan2(float(current_Z_IMU.vy), float(current_Y_IMU.vz))
-        ypos = (180/np.pi)*np.arctan2(float(current_X_IMU.vy), float(current_Z_IMU.vx)) 
-        zpos = (180/np.pi)*np.arctan2(-float(current_Y_IMU.vx), -float(current_X_IMU.vz)) 
-
-        #print("Z angle: {0}".format((180/np.pi)*np.arctan(float(current_X_IMU.vx/current_Z_IMU.vz))))
-        #print_vector(current_X_IMU)
-        #print_vector(current_Y_IMU)
-        #print_vector(current_Z_IMU)
-
-        return(xpos, ypos, zpos)
+        return((180/np.pi)*rpy[0], (180/np.pi)*rpy[1], (180/np.pi)*rpy[2])

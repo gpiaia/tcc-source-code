@@ -2,10 +2,13 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 
-train_df = pd.read_csv('../Datasets/AccelerometerData.csv')
+train_df = pd.read_csv('../Datasets/AccelData.csv')
 
 median = train_df.median()
 mean = train_df.mean()
+
+print('Mediana: {0}'.format(median))
+print('Media: {0}'.format(mean))
 
 xx = np.full(len(train_df), median[0])
 yy = np.full(len(train_df), median[1])
