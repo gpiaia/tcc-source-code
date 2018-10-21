@@ -15,8 +15,7 @@ import csv
 import sys
 import RPi.GPIO as GPIO
 from ivPID import PID
-from QuaternionIntregration import *
-from  Quaternion import *
+from MPU6050Python.MPU6050 import MPU6050
 from kalman import *
 
 #  Rasp Pins
@@ -26,12 +25,16 @@ ESC_GPIOx = 20
 
 # Pulses Widths
 StopPW = {'x': 1000, 'y': 1000, 'z':1000} 
-LPWP   = {'x': 1090, 'y': 1090, 'z':1090} # low Pulse Width 
-HPW    = {'x': 1390, 'y': 1390, 'z':1390} # Hight Pulse Width
-MPW    = {'x': 1190, 'y': 1190, 'z':1190} # Mean Pulse Width
+StopPWSD = {'x': 1001, 'y': 1001, 'z':1001} 
+HPW    = {'x': 1400, 'y': 1400, 'z':1400} # Hight Pulse Width
+LPW    = {'x': 1090, 'y': 1090, 'z':1090} # low Pulse Width
 
 update_pid = 0
-SampleTime = 0.037
+SampleTime = 0.02
+
+xdisplacement = 0
+ydisplacement = 0
+zdisplacement = 0
 
 # Set up BCM GPIO numbering
 GPIO.setmode(GPIO.BCM)
@@ -39,25 +42,34 @@ GPIO.setmode(GPIO.BCM)
 # Connect to pigpio
 pi = pigpio.pi()
 
+# Create a new instance of the MPU6050 class
+sensor = MPU6050(0x68)
+
 kx = Kalman(state_dim=9, obs_dim=3)
 ky = Kalman(state_dim=9, obs_dim=3)
 kz = Kalman(state_dim=9, obs_dim=3)
 
 # determined by calibration: offset of the gyro; take away to reduce drift.
-#offset_GYRO = [((-1.601500-1.603053)/2), ((0.884710+0.885496)/2), ((0.328244+0.332608)/2)]
-offset_GYRO = [((-1.681646-1.687023)/2), ((0.854962+0.858823)/2), ((0.259542+0.264288)/2)]
-GYR_Integration_Instance = GYR_Integration(dt=SampleTime, offset_GYRO=offset_GYRO, verbose=3)
+offset_GYRO = [((-1.679389-1.675937)/2), ((0.870229+0.872721)/2), ((0.190840+0.194885)/2)]
+
+def RiemannSun(velocity, STime):
+    global xdisplacement, ydisplacement, zdisplacement
+    xdisplacement += (velocity['x'] - offset_GYRO[0]) * STime * np.pi 
+    ydisplacement += (velocity['y'] - offset_GYRO[1]) * STime * np.pi
+    zdisplacement += (velocity['z'] - offset_GYRO[2]) * STime * np.pi
+
+    return (xdisplacement, ydisplacement, zdisplacement)
 
 def Motors(Pulse, state):
-    #pi.set_servo_pulsewidth(ESC_GPIOx, int(Pulse['x']))
+    pi.set_servo_pulsewidth(ESC_GPIOx, int(Pulse['x']))
     if (state == 0) :
-        time.sleep(5/1000)
-    #pi.set_servo_pulsewidth(ESC_GPIOy, int(Pulse['y']))
+        time.sleep(5)
+    pi.set_servo_pulsewidth(ESC_GPIOy, int(Pulse['y']))
     if (state == 0) :
-        time.sleep(5/1000)
+        time.sleep(5)
     pi.set_servo_pulsewidth(ESC_GPIOz, int(Pulse['z']))  
     if (state == 0) :
-        time.sleep(25/1000)
+        time.sleep(40)
 
 
 def PIDController(P, I, D, SetPoint):
@@ -75,16 +87,14 @@ def PIDController(P, I, D, SetPoint):
 
     while update_pid == 0:
 
-        loop_init = time.time()
+        gyro_data = sensor.get_gyro_data()
+        accel_data = sensor.get_accel_data()
 
-        #perform one gyro integration: read, update quaternion
-        quat_data = GYR_Integration_Instance.perform_one_iteration()
+        displacement = RiemannSun(gyro_data, SampleTime)
         
-        quattime = int(time.time()*1000.0)- int(loop_init*1000.0)
-
-        girox = np.r_[quat_data[0], quat_data[3], quat_data[6]]
-        giroy = np.r_[quat_data[1], quat_data[4], quat_data[7]]
-        giroz = np.r_[quat_data[2], quat_data[5], quat_data[8]]
+        girox = np.r_[displacement[0], (gyro_data['x']-offset_GYRO[0]), accel_data['x']]
+        giroy = np.r_[displacement[1], (gyro_data['y']-offset_GYRO[1]), accel_data['y']]
+        giroz = np.r_[displacement[2], (gyro_data['z']-offset_GYRO[2]), accel_data['z']]
 
         kx.update(girox)
         ky.update(giroy)
@@ -94,45 +104,35 @@ def PIDController(P, I, D, SetPoint):
         kgiroy = ky.predict()
         kgiroz = kz.predict()
 
-        kalmanttime = int(time.time()*1000.0)- int(loop_init*1000.0)
-
-        print('Posicao:{0},{1},{2}'.format(quat_data[0], quat_data[1], quat_data[2]))
-
         pidx.update(kgirox[0])
         pidy.update(kgiroy[0])
         pidz.update(kgiroz[0])
 
-        if (pidx.output >= 180):
+        if (pidx.output >= 360):
             outputx = HPW['x']
-        elif (pidz.output < -180):
-            outputx = LPWP['x']
+        elif (pidz.output < 0):
+            outputx = StopPWSD['x']
         else:
-            outputx = MPW['x'] + pidx.output
+            outputx = LPW['x'] + pidx.output
 
-        if (pidy.output >= 180):
+        if (pidy.output >= 360):
             outputy = HPW['x']
-        elif (pidy.output < -180):
-            outputy = LPWP['x']
+        elif (pidy.output < 0):
+            outputy = StopPWSD['x']
         else:
-            outputy = MPW['x'] + pidy.output
+            outputy = LPW['x'] + pidy.output
 
-        if (pidz.output >= 180):
+        if (pidz.output >= 360):
             outputz = HPW['x']
-        elif (pidz.output < -180):
-            outputz = LPWP['x']
+        elif (pidz.output < 0):
+            outputz = StopPWSD['x']
         else:
-            outputz = MPW['x'] + pidz.output
-
-        #print('PID:{0},{1},{2}'.format(pidx.output, pidy.output, pidz.output))
+            outputz = LPW['x'] + pidz.output
 
         pidoutput = {'x': outputx, 'y': outputy, 'z':outputz} 
 
-        pidtime = int(time.time()*1000.0)- int(loop_init*1000.0)
-
         Motors(pidoutput, 1)
 
-        motortime = int(time.time()*1000.0)- int(loop_init*1000.0)
-        
         with open(r'data.csv', 'a') as csvfile:
             fieldnames = ['Posicaox', 'Posicaoy', 'Posicaoz',
                           'kPosicaox', 'kPosicaoy', 'kPosicaoz',
@@ -140,9 +140,9 @@ def PIDController(P, I, D, SetPoint):
                           'Largura de Pulso x', 'Largura de Pulso y', 'Largura de Pulso z',
                           'Tempo']
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            writer.writerow({'Posicaox': float(quat_data[0]),
-                             'Posicaoy': float(quat_data[1]),
-                             'Posicaoz': float(quat_data[2]),
+            writer.writerow({'Posicaox': float(displacement[0]),
+                             'Posicaoy': float(displacement[1]),
+                             'Posicaoz': float(displacement[2]),
                              'kPosicaox': float(kgirox[0]),
                              'kPosicaoy': float(kgiroy[0]),
                              'kPosicaoz': float(kgiroz[0]),
@@ -152,18 +152,16 @@ def PIDController(P, I, D, SetPoint):
                              'Largura de Pulso x': int(outputx),
                              'Largura de Pulso y': int(outputy),
                              'Largura de Pulso z': int(outputz),
-                             'Tempo': time.time()})
-        writetime = int(time.time()*1000.0)- int(loop_init*1000.0)
-        #print('{0},{1},{2},{3}'.format(quattime, kalmanttime, pidtime, motortime, writetime))
-        #time.sleep(SampleTime)
+                             'Tempo': time.time()}) 
+        time.sleep(SampleTime)
 
 def main():
     argList = sys.argv
 
     Motors(StopPW, 1)
     if int(argList[5])== 1:  
-        time.sleep(2/1000)
-        Motors(LPWP, 0)
+        time.sleep(2)
+        Motors(LPW, 0)
 
     with open(r'data.csv', 'a') as csvfile:
         fieldnames = ['Posicaox', 'Posicaoy', 'Posicaoz',
@@ -174,14 +172,13 @@ def main():
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
 
-    P = {'x': 1, 'y': 1, 'z': float(argList[1])}
-    I = {'x': 0, 'y': 0, 'z': float(argList[2])}
-    D = {'x': 0, 'y': 0, 'z': float(argList[3])}
+    P = {'x': 0.1275, 'y': 0.1275, 'z': float(argList[1])}
+    I = {'x': 0.048, 'y': 0.048, 'z': float(argList[2])}
+    D = {'x': 0.192, 'y': 0.192, 'z': float(argList[3])}
     SetPoint = {'x': 0, 'y': 0, 'z': float(argList[4])}
 
-    print('Controle Iniciando em 10s')
-    Motors(MPW, 0)
-    time.sleep(10/1000)
+    print('Controle Iniciando em 5s')
+    time.sleep(5)
 
     PIDController(P, I, D, SetPoint)
 
