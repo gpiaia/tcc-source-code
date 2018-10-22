@@ -6,7 +6,7 @@
 # Copyright (C) 2018 Guilherme Piaia . <piaiag@live.com>
 #==============================================================================
 
-import time
+import time, threading
 import numpy as np
 from scipy import integrate
 from scipy import signal
@@ -35,12 +35,20 @@ HPW    = {'x': sPW + lPW + 2*dPW, 'y': sPW + lPW + 2*dPW, 'z': sPW + lPW + zG*dP
 MPW    = {'x': sPW + lPW + dPW,   'y': sPW + lPW + dPW,   'z': sPW + lPW + (zG/2)*dPW} # Average  Pulse Width
 LPW    = {'x': sPW + lPW,         'y': sPW + lPW,         'z': sPW + lPW} # low Pulse Width
 
+pidoutput = MPW
+pidx = 0
+pidy = 0
+pidz = 0
+
+loop_init = time.time()
+
 update_pid = 0
-SampleTime = 0.005
+SampleTime = 0.04
 
 xdisplacement = 0
 ydisplacement = 0
 zdisplacement = 0
+SetPoint = {'x': 0, 'y': 0, 'z': 0}
 
 # Set up BCM GPIO numbering
 GPIO.setmode(GPIO.BCM)
@@ -62,26 +70,26 @@ offset_GYRO = [((-1.5190839694656488 - 1.5155436229394403)/2),
 
 def RiemannSun(velocity, STime):
     global xdisplacement, ydisplacement, zdisplacement
-    xdisplacement += (velocity['x'] - offset_GYRO[0]) * STime * np.pi 
-    ydisplacement += (velocity['y'] - offset_GYRO[1]) * STime * np.pi
-    zdisplacement += (velocity['z'] - offset_GYRO[2]) * STime * np.pi
+    xdisplacement += (velocity['x'] - offset_GYRO[0]) * STime
+    ydisplacement += (velocity['y'] - offset_GYRO[1]) * STime
+    zdisplacement += (velocity['z'] - offset_GYRO[2]) * STime
 
     return (xdisplacement, ydisplacement, zdisplacement)
 
 def Motors(Pulse, state):
     pi.set_servo_pulsewidth(ESC_GPIOx, int(Pulse['x']))
     if (state == 0) :
-        time.sleep(5)
+        time.sleep(5/1000)
     pi.set_servo_pulsewidth(ESC_GPIOy, int(Pulse['y']))
     if (state == 0) :
-        time.sleep(5)
+        time.sleep(5/1000)
     pi.set_servo_pulsewidth(ESC_GPIOz, int(Pulse['z']))  
     if (state == 0) :
-        time.sleep(40)
+        time.sleep(40/1000)
 
 
 def PIDController(P, I, D, SetPoint):
-
+    global pidx, pidy, pidz
     pidx = PID.PID(P['x'], I['x'], D['x'])
     pidy = PID.PID(P['y'], I['y'], D['y'])
     pidz = PID.PID(P['z'], I['z'], D['z'])
@@ -93,85 +101,87 @@ def PIDController(P, I, D, SetPoint):
     pidz.SetPoint = SetPoint['z']
     pidz.setSampleTime(SampleTime)
 
-    while update_pid == 0:
-        loop_init = time.time()
 
-        gyro_data = sensor.get_gyro_data()
-        accel_data = sensor.get_accel_data()
+def mainTask():
+    global pidoutput, pidx, pidy, pidz, SetPoint, loop_init
+    
+    rec_interval = time.time() - loop_init
+    loop_init = time.time()
 
-        displacement = RiemannSun(gyro_data, SampleTime)
-        
-        girox = np.r_[displacement[0], (gyro_data['x']-offset_GYRO[0]), accel_data['x']]
-        giroy = np.r_[displacement[1], (gyro_data['y']-offset_GYRO[1]), accel_data['y']]
-        giroz = np.r_[displacement[2], (gyro_data['z']-offset_GYRO[2]), accel_data['z']]
+    print(rec_interval*1000)
 
-        kx.update(girox)
-        ky.update(giroy)
-        kz.update(giroz)
+    Motors(pidoutput, 1)
 
-        kgirox = kx.predict()
-        kgiroy = ky.predict()
-        kgiroz = kz.predict()
+    gyro_data = sensor.get_gyro_data()
+    accel_data = sensor.get_accel_data()
 
-        pidx.update(kgirox[0])
-        pidy.update(kgiroy[0])
-        pidz.update(kgiroz[0])
+    displacement = RiemannSun(gyro_data, rec_interval)
+    
+    girox = np.r_[displacement[0], (gyro_data['x']-offset_GYRO[0]), accel_data['x']]
+    giroy = np.r_[displacement[1], (gyro_data['y']-offset_GYRO[1]), accel_data['y']]
+    giroz = np.r_[displacement[2], (gyro_data['z']-offset_GYRO[2]), accel_data['z']]
 
-        if (pidx.output >= dPW):
-            outputx = HPW['x']
-        elif (pidz.output < -dPW):
-            outputx = LPW['x']
-        else:
-            outputx = MPW['x'] + pidx.output
+    kx.update(girox)
+    ky.update(giroy)
+    kz.update(giroz)
 
-        if (pidy.output >= dPW):
-            outputy = HPW['x']
-        elif (pidy.output < -dPW):
-            outputy = LPW['x']
-        else:
-            outputy = MPW['x'] + pidy.output
+    kgirox = kx.predict()
+    kgiroy = ky.predict()
+    kgiroz = kz.predict()
 
-        if (pidz.output >= zG*dPW):
-            outputz = HPW['x']
-        elif (pidz.output < -zG*dPW):
-            outputz = LPW['x']
-        else:
-            outputz = MPW['x'] + pidz.output
+    pidx.update(kgirox[0])
+    pidy.update(kgiroy[0])
+    pidz.update(kgiroz[0])
 
-        print('Deslocamento:{0}'.format(displacement))
+    if (pidx.output >= dPW):
+        outputx = HPW['x']
+    elif (pidz.output < -dPW):
+        outputx = LPW['x']
+    else:
+        outputx = MPW['x'] + pidx.output
 
-        pidoutput = {'x': outputx, 'y': outputy, 'z': outputz}
+    if (pidy.output >= dPW):
+        outputy = HPW['x']
+    elif (pidy.output < -dPW):
+        outputy = LPW['x']
+    else:
+        outputy = MPW['x'] + pidy.output
 
-        print('PID:{0},{1},{2}'.format(pidx.output, pidy.output, pidz.output))
+    if (pidz.output >= zG*dPW):
+        outputz = HPW['x']
+    elif (pidz.output < -zG*dPW):
+        outputz = LPW['x']
+    else:
+        outputz = MPW['x'] + pidz.output
 
-        Motors(pidoutput, 1)
+    pidoutput = {'x': outputx, 'y': outputy, 'z': outputz}
 
-        with open(r'data.csv', 'a') as csvfile:
-            fieldnames = ['Posicaox', 'Posicaoy', 'Posicaoz',
-                          'kPosicaox', 'kPosicaoy', 'kPosicaoz',
-                          'SetPointx', 'SetPointy', 'SetPointz', 
-                          'Largura de Pulso x', 'Largura de Pulso y', 'Largura de Pulso z',
-                          'Gyrox', 'Gyroy', 'Gyroz',
-                          'Tempo']
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            writer.writerow({'Posicaox': float(displacement[0]),
-                             'Posicaoy': float(displacement[1]),
-                             'Posicaoz': float(displacement[2]),
-                             'kPosicaox': float(kgirox[0]),
-                             'kPosicaoy': float(kgiroy[0]),
-                             'kPosicaoz': float(kgiroz[0]),
-                             'SetPointx': float(SetPoint['x']),
-                             'SetPointy': float(SetPoint['y']),
-                             'SetPointz': float(SetPoint['z']),
-                             'Largura de Pulso x': int(outputx),
-                             'Largura de Pulso y': int(outputy),
-                             'Largura de Pulso z': int(outputz),
-                             'Gyrox' : float(gyro_data['x']),
-                             'Gyroy' : float(gyro_data['y']), 
-                             'Gyroz' : float(gyro_data['z']),
-                             'Tempo': time.time()})
+    with open(r'data.csv', 'a') as csvfile:
+        fieldnames = ['Posicaox', 'Posicaoy', 'Posicaoz',
+                      'kPosicaox', 'kPosicaoy', 'kPosicaoz',
+                      'SetPointx', 'SetPointy', 'SetPointz', 
+                      'Largura de Pulso x', 'Largura de Pulso y', 'Largura de Pulso z',
+                      'Gyrox', 'Gyroy', 'Gyroz',
+                      'Tempo']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writerow({'Posicaox': float(displacement[0]),
+                         'Posicaoy': float(displacement[1]),
+                         'Posicaoz': float(displacement[2]),
+                         'kPosicaox': float(kgirox[0]),
+                         'kPosicaoy': float(kgiroy[0]),
+                         'kPosicaoz': float(kgiroz[0]),
+                         'SetPointx': float(SetPoint['x']),
+                         'SetPointy': float(SetPoint['y']),
+                         'SetPointz': float(SetPoint['z']),
+                         'Largura de Pulso x': int(outputx),
+                         'Largura de Pulso y': int(outputy),
+                         'Largura de Pulso z': int(outputz),
+                         'Gyrox' : float(gyro_data['x']),
+                         'Gyroy' : float(gyro_data['y']), 
+                         'Gyroz' : float(gyro_data['z']),
+                         'Tempo': time.time()})
 
-        time.sleep(SampleTime)
+    threading.Timer(0.0001, mainTask).start()
 
 def main():
     argList = sys.argv
@@ -200,9 +210,9 @@ def main():
     print('Controle Iniciando em 5s')
     time.sleep(5)
 
-    print('Estabilizando Satelite na Posicao Inicial')
+    PIDController(P, I, D, SetPoint)
 
-    PIDController(P, I, D, SetPointInit)
+    mainTask()
 
 
 if __name__ == "__main__":
