@@ -2,25 +2,31 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 
-train_df = pd.read_csv('../Datasets/AccelData.csv')
+data = pd.read_csv('../Datasets/GyroData.csv')
 
-median = train_df.median()
-mean = train_df.mean()
+medianx = data['Gyrox'].median()
+mediany = data['Gyroy'].median()
+medianz = data['Gyroz'].median()
 
-print('Mediana: {0}'.format(median))
-print('Media: {0}'.format(mean))
+meanx = data['Gyrox'].mean()
+meany = data['Gyroy'].mean()
+meanz = data['Gyroz'].mean()
 
-xx = np.full(len(train_df), median[0])
-yy = np.full(len(train_df), median[1])
-zz = np.full(len(train_df), median[2])
 
-xm = np.full(len(train_df), mean[0])
-ym = np.full(len(train_df), mean[1])
-zm = np.full(len(train_df), mean[2])
+print('Mediana: {0}, {1}, {2}'.format(medianx, mediany, medianz))
+print('Media: {0}, {1}, {2}'.format(meanx, meany, meanz))
 
-plt.plot(train_df['x'], label='Vx')
-plt.plot(train_df['y'], label='Vy')
-plt.plot(train_df['z'], label='Vz')
+xx = np.full(len(data), medianx)
+yy = np.full(len(data), mediany)
+zz = np.full(len(data), medianz)
+
+xm = np.full(len(data), meanx)
+ym = np.full(len(data), meany)
+zm = np.full(len(data), meanz)
+
+plt.plot(data['Gyrox'], label='Vx')
+plt.plot(data['Gyroy'], label='Vy')
+plt.plot(data['Gyroz'], label='Vz')
 plt.plot(xx, label='Mediana Vx') 
 plt.plot(yy, label='Mediana Vy') 
 plt.plot(zz, label='Mediana Vz') 

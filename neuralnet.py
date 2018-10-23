@@ -1,9 +1,9 @@
-from sklearn.neural_network import MLPClassifier
-from sklearn.metrics import mean_squared_error
 from math import sqrt
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+from sklearn.neural_network import MLPClassifier
+from sklearn.metrics import mean_squared_error
 
 # Carrega os elementos do dataset
 dataset = pd.read_csv('Datasets/data_K1.csv')
