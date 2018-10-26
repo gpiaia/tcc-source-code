@@ -13,10 +13,10 @@ i = 0
 with open('../data.csv', 'r') as csvfile:
     plots = csv.DictReader(csvfile, delimiter=',')
     for row in plots:
-        y.append(float(row['Posicaoy']))
-        x.append(float(row['Posicaox']))
-        z.append(float(row['Posicaoz']))
-        t.append(float(row['Tempo']) -1540045514.313028)
+        y.append(float(row['kPosicaoy']))
+        x.append(float(row['kPosicaox']))
+        z.append(float(row['kPosicaoz']))
+        t.append(float(row['Tempo']) -1540588603.07323)
         if i == 0:
             sp.append(float(0))
         else:
@@ -30,7 +30,7 @@ plt.plot(t, sp, label='Referência')
 plt.xlabel('Tempo [s]')
 plt.ylabel('Posição [°]')
 plt.title('Posição Angular em Malha Fechada com Controlador PID Sintonizado via Ziegler-Nichols')
-plt.legend(loc=3)
+plt.legend(loc=1)
 plt.grid(True)
 plt.savefig("position.png")
 plt.show()

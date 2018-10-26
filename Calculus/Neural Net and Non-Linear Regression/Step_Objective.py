@@ -1,10 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import odeint
+import csv
 
 # process model
-Kp = 60
-taup = 1.5
+Kp = 30
+taup = 3
 def process(y,t,u,Kp,taup):
     # Kp = process gain
     # taup = process time constant
@@ -12,9 +13,9 @@ def process(y,t,u,Kp,taup):
     return dydt
 
 # specify number of steps
-ns = 1000
+ns = 500
 # define time points
-t = np.linspace(0,ns/100,ns+1)
+t = np.linspace(0,ns/50,ns+1)
 delta_t = t[1]-t[0]
 
 # storage for recording values
@@ -38,6 +39,11 @@ tauD = 0.0
 Kc = Kc * 2
 tauI = tauI / 2
 tauD = 1.0
+
+# PID (tuning)
+# Kc = 0.8931814503145181
+# tauI = Kc*0.33975003505828794
+# tauD = 0.0007991447392367337/Kc
 
 # Upper and Lower limits on OP
 op_hi = 10.0
@@ -66,6 +72,9 @@ ie[ns] = ie[ns-1]
 P[ns] = P[ns-1]
 I[ns] = I[ns-1]
 D[ns] = D[ns-1]
+
+
+np.savetxt("data.csv", pv, delimiter=",", header="Posicaoz", comments="")
 
 # plot results
 plt.figure(1)

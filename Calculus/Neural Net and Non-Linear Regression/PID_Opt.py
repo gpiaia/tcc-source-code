@@ -7,8 +7,8 @@ from sklearn.metrics import mean_squared_error
 from scipy.optimize import least_squares
 
 # Carrega os elementos do dataset
-dataset = pd.read_csv('../../Datasets/data_K1.csv')
-z = dataset['Posicaoz']
+dataset = pd.read_csv('../../Datasets/data_k1.csv')
+z = dataset['kPosicaoz']
 sp = dataset['SetPointz']
 t = dataset['Tempo'].sub(dataset['Tempo'][0])
 
@@ -48,26 +48,26 @@ print('Erro RMS:{0}'.format(err_rms))
 
 
 ################################## Plot Neural Net Comparison ################################
-plt.plot(y_fit, label='Largura de Pulso Real')
-plt.plot(y_predicted, label='Largura de Pulso Predita pela RNA')
-plt.xlabel('Sequência de Pulsos')
-plt.ylabel('Largura de Pulso [$\mu$S]')
-plt.title('Comparação entre as Larguras de Pulso Reais e as Preditas pela Rede Neural Artificial')
-plt.legend(loc=4)
-plt.grid(True)
-plt.savefig("position.png")
-plt.show()
+# plt.plot(y_fit, label='Largura de Pulso Real')
+# plt.plot(y_predicted, label='Largura de Pulso Predita pela RNA')
+# plt.xlabel('Sequência de Pulsos')
+# plt.ylabel('Largura de Pulso [$\mu$S]')
+# plt.title('Comparação entre as Larguras de Pulso Reais e as Preditas pela Rede Neural Artificial')
+# plt.legend(loc=4)
+# plt.grid(True)
+# plt.savefig("position.png")
+# plt.show()
 
 
 ################################## Optimization ################################
 
-data = pd.read_csv('../../Datasets/data_PID.csv')
+data = pd.read_csv('../../Datasets/data_usuario.csv')
 
-z = data['Posicaoz']
+z = data['kPosicaoz']
 sp = dataset['SetPointz']
 t = dataset['Tempo'].sub(dataset['Tempo'][0])
 
-dt = t[1]-t[0]
+dt = t[5]-t[400]
 x = pd.concat([z, sp], axis=1, sort=False)
 
 # 80% do dataset é usado para treinar a RNA
@@ -101,7 +101,7 @@ def fun(x, n_t, y) :
 	return u - y
 
 
-x0 = [0.13629513931492626, 0.2617095097846907, 1.0468380391387628]
+x0 = [1, 1, 1]
 
 res_robust = least_squares(fun, x0, loss='arctan', f_scale=0.1, args=(n_train, y_pred))
 

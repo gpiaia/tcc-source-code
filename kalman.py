@@ -1,53 +1,84 @@
+class KalmanAngle:
+    def __init__(self):
+        self.QAngle = 0.001
+        self.QBias = 0.003
+        self.RMeasure = 20
+        self.angle = 0.0
+        self.bias = 0.0
+        self.rate = 0.0
+        self.P = [[0.0, 0.0], [0.0, 0.0]]
 
-class Kalman:
-	
-	def __init__(self, state_dim, obs_dim):
-		import numpy as np
-		self.state_dim = state_dim
-		self.obs_dim   = obs_dim
-		
-		self.Q 		 = np.matrix( np.eye(state_dim)*1e-4 )			  # Process noise
-		self.R		 = np.matrix( np.eye(obs_dim)*0.01 )			  # Observation noise
-		self.A		 = np.matrix( np.eye(state_dim) )			  # Transition matrix
-		self.H		 = np.matrix( np.zeros((obs_dim, state_dim)) )		  # Measurement matrix
-		self.K		 = np.matrix( np.zeros_like(self.H.T) )			  # Gain matrix
-		self.P		 = np.matrix( np.zeros_like(self.A) )			  # State covariance
-		self.x		 = np.matrix( np.zeros((state_dim, 1)) )		  # The actual state of the system
-	
-		if obs_dim == state_dim/3:
-			# We'll go ahead and make this a position-predicting matrix with velocity & acceleration if we've got the right combination of dimensions
-			# The model is : x( t + 1 ) = x( t ) + v( t ) + a( t ) / 2
+    '''def kalman():
+        QAngle = 0.001
+        QBias = 0.003
+        RMeasure = 0.03
 
-			idx = np.r_[0:obs_dim]
-			positionIdx = np.ix_(idx, idx)
-			velocityIdx = np.ix_(idx,idx+obs_dim)
-			accelIdx	= np.ix_(idx, idx+obs_dim*2)
-			accelAndVelIdx = np.ix_(idx+obs_dim, idx+obs_dim*2)
-			
-			self.H[positionIdx]		= np.eye(obs_dim)
-			self.A				= np.eye(state_dim)
-			self.A[velocityIdx]		+= np.eye(obs_dim)
-			self.A[accelIdx]		+= 0.5 * np.eye(obs_dim)
-			self.A[accelAndVelIdx]  	+= np.eye(obs_dim)
-			
-	def update(self, obs):
-		import numpy as np
-		from numpy.linalg import inv
-		if obs.ndim == 1:
-			obs = np.matrix(obs).T
-		
-		# Make prediction
-		self.x	= self.A * self.x
-		self.P	= self.A * self.P * self.A.T + self.Q
-		
-		# Compute the optimal Kalman gain factor
-		self.K = self.P * self.H.T * inv(self.H * self.P * self.H.T + self.R)
-		
-		# Correction based on observation
-		self.x = self.x + self.K * ( obs - self.H * self.x )
-		self.P = self.P - self.K * self.H * self.P
+        angle = 0.0
+        bias = 0.0
 
+        P[0][0] = 0.0
+        P[0][1] = 0.0
+        P[1][0] = 0.0
+        P[1][1] = 0.0'''
 
-	def predict(self):
-		import numpy as np
-		return np.asarray(self.H*self.x)
+    def getAngle(self, newAngle, newRate, dt):
+        # step 1:
+        self.rate = newRate - self.bias  # new_rate is the latest Gyro measurement
+        self.angle += dt * self.rate
+
+        # Step 2:
+        self.P[0][0] += dt * (dt * self.P[1][1] - self.P[0]
+                              [1] - self.P[1][0] + self.QAngle)
+        self.P[0][1] -= dt * self.P[1][1]
+        self.P[1][0] -= dt * self.P[1][1]
+        self.P[1][1] += self.QBias * dt
+
+        # Step 3: Innovation
+        y = newAngle - self.angle
+
+        # Step 4: Innovation covariance
+        s = self.P[0][0] + self.RMeasure
+
+        # Step 5:    Kalman Gain
+        K = [0.0, 0.0]
+        K[0] = self.P[0][0] / s
+        K[1] = self.P[1][0] / s
+
+        # Step 6: Update the Angle
+        self.angle += K[0] * y
+        self.bias += K[1] * y
+
+        # Step 7: Calculate estimation error covariance - Update the error covariance
+        P00Temp = self.P[0][0]
+        P01Temp = self.P[0][1]
+
+        self.P[0][0] -= K[0] * P00Temp
+        self.P[0][1] -= K[0] * P01Temp
+        self.P[1][0] -= K[1] * P00Temp
+        self.P[1][1] -= K[1] * P01Temp
+
+        return self.angle
+
+    def setAngle(self, angle):
+        self.angle = angle
+
+    def setQAngle(self, QAngle):
+        self.QAngle = QAngle
+
+    def setQBias(self, QBias):
+        self.QBias = QBias
+
+    def setRMeasure(self, RMeasure):
+        self.RMeasure = RMeasure
+
+    def getRate():
+        return self.rate
+
+    def getQAngle():
+        return self.QAngle
+
+    def getQBias():
+        return self.QBias
+
+    def getRMeasure():
+        return self.RMeasure
