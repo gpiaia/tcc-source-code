@@ -40,9 +40,9 @@ pidx = 0
 pidy = 0
 pidz = 0
 
-update_pid = 0
 SampleTime = 0.015
 loop_init = 0
+th = 0
 
 SetPoint = {'x': 0, 'y': 0, 'z': 0}
 
@@ -72,13 +72,6 @@ offset_GYRO = [((-1.29007633588 - 1.286599576676129)/2),
                (( 0.7709923664120001 + 0.7709923664120001)/2),
                (( 0.320610687023 + 0.32110736690888425)/2)]
 
-def RiemannSun(velocity, STime):
-    global xdisplacement, ydisplacement, zdisplacement
-    xdisplacement += (velocity['x'] - offset_GYRO[0]) * STime
-    ydisplacement += (velocity['y'] - offset_GYRO[1]) * STime
-    zdisplacement += (velocity['z'] - offset_GYRO[2]) * STime
-
-    return (xdisplacement, ydisplacement, zdisplacement)
 
 def Motors(Pulse, state):
     pi.set_servo_pulsewidth(ESC_GPIOx, int(Pulse['x']))
@@ -107,7 +100,7 @@ def PIDController(P, I, D, SetPoint):
 
 
 def mainTask():
-    global pidoutput, pidx, pidy, pidz, SetPoint, loop_init, kalAngleX, kalAngleY, kalAngleZ
+    global pidoutput, SetPoint, pidx, pidy, pidz, kalAngleX, kalAngleY, kalAngleZ, loop_init, th
 
     if(loop_init == 0) :
       dt = SampleTime
@@ -151,7 +144,7 @@ def mainTask():
 
     pidoutput = {'x': outputx, 'y': outputy, 'z': outputz}
 
-    with open(r'data.csv', 'a') as csvfile:
+    with open(r'data.csv' , 'a') as csvfile:
         fieldnames = ['kPosicaox', 'kPosicaoy', 'kPosicaoz',
                       'SetPointx', 'SetPointy', 'SetPointz', 
                       'Largura de Pulso x', 'Largura de Pulso y', 'Largura de Pulso z',
@@ -171,13 +164,15 @@ def mainTask():
                          'Gyroy' : float(gyro_data['y']), 
                          'Gyroz' : float(gyro_data['z']),
                          'Tempo': time.time()})
-        
-    # print('PW:' + str(outputx) + ',' + str(outputy) + ',' + str(outputz))
-    # print('PID:' + str(pidx.output) + ',' + str(pidy.output) + ',' + str(pidz.output))
-    # print('Pos:' + str(kalAngleX) + ',' + str(kalAngleY) + ',' + str(kalAngleZ))
+    
+    #print('PW:' + str(outputx) + ',' + str(outputy) + ',' + str(outputz))
+    #print('PID:' + str(pidx.output) + ',' + str(pidy.output) + ',' + str(pidz.output))
+    #print('Pos:' + str(kalAngleX) + ',' + str(kalAngleY) + ',' + str(kalAngleZ))
     threading.Timer(0.0015, mainTask).start()
 
 def main():
+    global SetPoint
+
     argList = sys.argv
 
     Motors(StopPW, 1)
@@ -185,7 +180,7 @@ def main():
         time.sleep(1)
         Motors(MPW, 0)
 
-    with open(r'data.csv', 'a') as csvfile:
+    with open('data.csv' , 'w') as csvfile:
         fieldnames = ['kPosicaox', 'kPosicaoy', 'kPosicaoz',
                       'SetPointx', 'SetPointy', 'SetPointz', 
                       'Largura de Pulso x', 'Largura de Pulso y', 'Largura de Pulso z',
@@ -214,3 +209,4 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print('Controle Interrompido pelo Usuario')
         Motors(StopPW, 1)
+        print(str(pidoutput))

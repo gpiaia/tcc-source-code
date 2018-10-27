@@ -6,9 +6,9 @@ from scipy.optimize import least_squares
 
 data = pd.read_csv('../../Datasets/data_K1.csv')
 sp = 45
-zpos = data['Posicaoz']
+zpos = data['kPosicaoz']
 
-t = data['Tempo'].sub(1539538801.996741)
+t = data['Tempo'].sub(dataset['Tempo'][0])
 
 # 80% do dataset é usado para treinar a RNA
 lenz = int(len(zpos)/6)
