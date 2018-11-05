@@ -1,8 +1,8 @@
 class KalmanAngle:
     def __init__(self):
         self.QAngle = 0.001
-        self.QBias = 0.003
-        self.RMeasure = 20
+        self.QBias = 0.001
+        self.RMeasure = 40
         self.angle = 0.0
         self.bias = 0.0
         self.rate = 0.0
