@@ -4,48 +4,48 @@ import numpy as np
 from scipy.optimize import least_squares
 
 
-data = pd.read_csv('../../Datasets/data_K1.csv')
-sp = 45
-zpos = data['kPosicaoz']
+# data = pd.read_csv('../../data.csv')
+# sp = 45
+# zpos = data['kPosicaoz']
 
-t = data['Tempo'].sub(dataset['Tempo'][0])
+# t = data['Tempo'].sub(data['Tempo'][0])
 
-# 80% do dataset é usado para treinar a RNA
-lenz = int(len(zpos)/6)
-fitlen = int(0.8*lenz)
-trainlen = int(0.2*lenz)
+# # 80% do dataset é usado para treinar a RNA
+# lenz = int(len(zpos)/6)
+# fitlen = int(0.8*lenz)
+# trainlen = int(0.2*lenz)
 
-def fun(x, t, y):
-    return x[0] * t + x[1] - y
+# def fun(x, t, y):
+#     return x[0] * t + x[1] - y
 
-def generate_data(t, k, tau):
-	return k * t + tau
+# def generate_data(t, k, tau):
+# 	return k * t + tau
 
-x0 = np.ones(2)
+# x0 = np.ones(2)
 
-z_train = zpos[5:fitlen]
-t_train = t[5:fitlen]
+# z_train = zpos[5:fitlen]
+# t_train = t[5:fitlen]
 
-z_test = zpos[fitlen + 1:lenz]
-t_test = t[fitlen + 1:lenz]
+# z_test = zpos[fitlen + 1:lenz]
+# t_test = t[fitlen + 1:lenz]
 
-res_robust = least_squares(fun, x0, loss='soft_l1', f_scale=0.1, args=(t_train, z_train))
+# res_robust = least_squares(fun, x0, loss='soft_l1', f_scale=0.1, args=(t_train, z_train))
 
-y_robust = generate_data(t_train, *res_robust.x)
+# y_robust = generate_data(t_train, *res_robust.x)
 
-def funL(a , b):
-	return -b/a
+# def funL(a , b):
+# 	return -b/a
 
-def funA2(a , b):
-	return (sp-b)/a
+# def funA2(a , b):
+# 	return (sp-b)/a
 
-def funA(a , b):
-	return -b
+# def funA(a , b):
+# 	return -b
 
 
-A = funA(*res_robust.x)
-L = funL(*res_robust.x)
-A2 = funA(*res_robust.x)
+# A = funA(*res_robust.x)
+# L = funL(*res_robust.x)
+# A2 = funA(*res_robust.x)
 
 K = 1.2/A
 Ti = 2*L

@@ -24,16 +24,16 @@ ESC_GPIOy = 16
 ESC_GPIOx = 20
 
 # Pulses Widths
-dPW = 30
+zG = 1.75
+dPW = 70
 sPW = 1000
 lPW = 90
-zG = 2 # Z actuator gain
 
 # Pulses Widths arrays
-StopPW = {'x': sPW,               'y': sPW,               'z': sPW} 
-HPW    = {'x': sPW + lPW + 2*dPW, 'y': sPW + lPW + 2*dPW, 'z': sPW + lPW + 2*zG*dPW} # Hight Pulse Width
-MPW    = {'x': sPW + lPW + dPW,   'y': sPW + lPW + dPW,   'z': sPW + lPW + zG*dPW} # Average  Pulse Width
-LPW    = {'x': sPW + lPW,         'y': sPW + lPW,         'z': sPW + lPW} # low Pulse Width
+StopPW = {'x': sPW,               'y': sPW,                'z': sPW} 
+HPW    = {'x': sPW + lPW + zG*dPW,   'y': sPW + lPW + zG*dPW,    'z': sPW + lPW + zG*dPW} # Hight Pulse Width
+MPW    = {'x': sPW + lPW + 0.45*dPW,    'y': sPW + lPW + 0.45*dPW,   'z': sPW + lPW + 0.45*dPW} # Average  Pulse Width
+LPW    = {'x': sPW + lPW ,              'y': sPW + lPW,               'z': sPW + lPW} # low Pulse Width
 
 pidoutput = MPW
 pidx = 0
@@ -68,9 +68,9 @@ kalmanY.setAngle(kalAngleY)
 kalmanZ.setAngle(kalAngleZ)
 
 # determined by calibration: offset of the gyro; take away to reduce drift.
-offset_GYRO = [((-1.29007633588 - 1.286599576676129)/2), 
-               (( 0.7709923664120001 + 0.7709923664120001)/2),
-               (( 0.320610687023 + 0.32110736690888425)/2)]
+offset_GYRO = [(( -1.4961832061068705 - 1.49196158901234)/2), 
+               (( 1.015267175572519 + 1.0198711686928483)/2),
+               (( -1.236641221374046 - 1.2385469091787231)/2)]
 
 
 def Motors(Pulse, state):
@@ -97,6 +97,10 @@ def PIDController(P, I, D, SetPoint):
     pidy.setSampleTime(SampleTime)
     pidz.SetPoint = SetPoint['z']
     pidz.setSampleTime(SampleTime)
+
+    #pidx.setWindup(20)
+    #pidy.setWindup(20)
+    #pidz.setWindup(20)
 
 
 def mainTask():
@@ -166,8 +170,8 @@ def mainTask():
                          'Tempo': time.time()})
     
     #print('PW:' + str(outputx) + ',' + str(outputy) + ',' + str(outputz))
-    #print('PID:' + str(pidx.output) + ',' + str(pidy.output) + ',' + str(pidz.output))
-    #print('Pos:' + str(kalAngleX) + ',' + str(kalAngleY) + ',' + str(kalAngleZ))
+    print('PID:' + str(pidx.output) + ',' + str(pidy.output) + ',' + str(pidz.output))
+    print('Pos:' + str(kalAngleX) + ',' + str(kalAngleY) + ',' + str(kalAngleZ))
     threading.Timer(0.0015, mainTask).start()
 
 def main():
@@ -175,8 +179,8 @@ def main():
 
     argList = sys.argv
 
-    Motors(StopPW, 1)
     if int(argList[5])== 1:  
+        Motors(StopPW, 1)
         time.sleep(1)
         Motors(MPW, 0)
 
@@ -188,10 +192,10 @@ def main():
                       'Tempo']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
-
-    P = {'x': 1, 'y': 1, 'z': float(argList[1])}
-    I = {'x': 0, 'y': 0, 'z': float(argList[2])}
-    D = {'x': 0, 'y': 0, 'z': float(argList[3])}
+# 3 0.05 3
+    P = {'x': 3, 'y': 3, 'z': float(argList[1])}
+    I = {'x': 1, 'y': 1, 'z': float(argList[2])}
+    D = {'x': 3, 'y': 3, 'z': float(argList[3])}
     SetPoint = {'x': 0, 'y': 0, 'z': float(argList[4])}
     SetPointInit = {'x': 0, 'y': 0, 'z': 0}
 

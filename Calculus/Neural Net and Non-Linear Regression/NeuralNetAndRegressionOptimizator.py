@@ -7,7 +7,7 @@ from sklearn.metrics import mean_squared_error
 from scipy.optimize import least_squares
 
 # Carrega os elementos do dataset
-dataset = pd.read_csv('../../Datasets/data_k1.csv')
+dataset = pd.read_csv('../../Datasets/data_pid_0111.csv')
 z = dataset['kPosicaoz']
 sp = dataset['SetPointz']
 t = dataset['Tempo'].sub(dataset['Tempo'][0])
@@ -58,10 +58,44 @@ print('Erro RMS:{0}'.format(err_rms))
 # plt.savefig("position.png")
 # plt.show()
 
+fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(18,10))
+
+# Set the font dictionaries (for plot title and axis titles)
+title_font = {'fontname':'Times', 'size':'20', 'color':'black', 'weight':'normal',
+  'verticalalignment':'bottom', 'usetex': 'true'} # Bottom vertical alignment for more space
+axis_font = {'fontname':'Times', 'size':'20', 'usetex': 'true'}
+
+ax[0].plot(y_fit, label='Real', color='k', ls='solid')
+ax[0].plot(y_predicted, label='Predita pela RNA', color='0.75', ls='solid')
+ax[0].set_xlabel('Sequência de Pulsos', **axis_font)
+ax[0].set_ylabel('Largura de Pulso [$\mu$S]', **axis_font)
+ax[0].set_title('Comparação entre as Larguras de Pulso Reais e as Preditas pela Rede Neural Artificial', **title_font)
+ax[0].tick_params(axis='both', which='major', labelsize=16)
+ax[0].legend(loc=2, borderpad=1.5, fontsize=16)
+ax[0].grid(True)
+
+ax[1].plot(y_fit, label='Real', color='k', ls='solid')
+ax[1].plot(y_predicted, label='Predita pela RNA', color='0.75', ls='solid')
+ax[1].set_xlabel('Sequência de Pulsos', **axis_font)
+ax[1].set_ylabel('Largura de Pulso [$\mu$S]', **axis_font)
+ax[1].set_title('Comparação entre as Larguras de Pulso Reais e as Preditas pela Rede Neural Artificial', **title_font)
+ax[1].tick_params(axis='both', which='major', labelsize=16)
+ax[1].legend(loc=2, borderpad=1.5, fontsize=16)
+ax[1].grid(True)
+
+
+plt.rc('font', family='serif', serif='Times')
+plt.rc('text', usetex=True)
+plt.rc('xtick', labelsize=18)
+plt.rc('ytick', labelsize=18)
+plt.rc('axes', labelsize=18)
+plt.subplots_adjust(left=0.04, right=0.99, top=0.96, bottom=0.05)
+plt.savefig("../../../Monografia/resultados/img/neural_output.pdf")
+
 
 ################################## Optimization ################################
 
-data = pd.read_csv('../../Datasets/data_usuario.csv')
+data = pd.read_csv('../../Datasets/data_PIDk5.csv')
 
 z = data['kPosicaoz']
 sp = dataset['SetPointz']
@@ -100,8 +134,7 @@ def fun(x, n_t, y) :
 	n += 1
 	return u - y
 
-
-x0 = [1, 1, 1]
+x0 = [2.25,0.444078947368421, 0]
 
 res_robust = least_squares(fun, x0, loss='arctan', f_scale=0.1, args=(n_train, y_pred))
 
