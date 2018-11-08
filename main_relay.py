@@ -30,10 +30,10 @@ sPW = 1000
 lPW = 90
 
 # Pulses Widths arrays
-StopPW = {'x': sPW,               'y': sPW,                'z': sPW} 
-HPW    = {'x': sPW + lPW + zG*dPW,   'y': sPW + lPW + zG*dPW,    'z': sPW + lPW + zG*dPW} # Hight Pulse Width
-MPW    = {'x': sPW + lPW + 0.45*dPW,    'y': sPW + lPW + 0.45*dPW,   'z': sPW + lPW + 0.45*dPW} # Average  Pulse Width
-LPW    = {'x': sPW + lPW ,              'y': sPW + lPW,               'z': sPW + lPW} # low Pulse Width
+StopPW = {'x': sPW,                  'y': sPW,                  'z': sPW} 
+HPW    = {'x': sPW + lPW + zG*dPW,   'y': sPW + lPW + zG*dPW,   'z': sPW + lPW + zG*dPW} # Hight Pulse Width
+MPW    = {'x': sPW + lPW + 0.45*dPW, 'y': sPW + lPW + 0.45*dPW, 'z': sPW + lPW + 0.45*dPW} # Average  Pulse Width
+LPW    = {'x': sPW + lPW ,           'y': sPW + lPW,            'z': sPW + lPW} # low Pulse Width
 
 pidoutput = MPW
 pidx = 0
@@ -69,9 +69,9 @@ kalmanY.setAngle(kalAngleY)
 kalmanZ.setAngle(kalAngleZ)
 
 # determined by calibration: offset of the gyro; take away to reduce drift.
-offset_GYRO = [(( -1.4961832061068705 - 1.49196158901234)/2), 
-               (( 1.015267175572519 + 1.0198711686928483)/2),
-               (( -1.236641221374046 - 1.2385469091787231)/2)]
+offset_GYRO = [((-1.4198473282442747-1.4233454586213155)/2), 
+               ((0.9083969465648856 + 0.9096207708659444)/2),
+               ((-0.9236641221374046 -0.9252346314907317)/2)]
 
 
 def Motors(Pulse, state):
@@ -87,8 +87,8 @@ def Motors(Pulse, state):
 
 def Relay(kalmanX, kalmanY, kalmanZ):
     global hys, gain
-    errx = 45 - kalmanX
-    erry = 45 - kalmanY
+    errx = 0 - kalmanX
+    erry = 0 - kalmanY
     errz = 45 - kalmanZ
 
     if(errx >= hys):
@@ -100,38 +100,38 @@ def Relay(kalmanX, kalmanY, kalmanZ):
 
     if(erry >= hys):
         outputy = gain
-    if(erry < -hys):
+    elif(erry < -hys):
         outputy = -gain
     else:
         outputy = erry
 
     if(errz >= hys):
         outputz = gain
-    if(errz < -hys):
+    elif(errz < -hys):
         outputz = -gain
     else:
         outputz = errz
 
     if (outputx >= dPW):
         outputx = HPW['x']
-    elif (outputx < -dPW):
-        outputx = LPW['x']
+    elif (outputx <= -0.45*dPW):
+        outputx = LPW['x'] 
     else:
-        outputx = MPW['x'] + outputx    
+        outputx = MPW['x'] + outputx
 
     if (outputy >= dPW):
-        outputy = HPW['x']
-    elif (outputy < -dPW):
-        outputy = LPW['x']
+        outputy = HPW['y']
+    elif (outputy <= -0.45*dPW):
+        outputy = LPW['y']
     else:
-        outputy = MPW['x'] + outputy
+        outputy = MPW['y'] + outputy
 
     if (outputz >= zG*dPW):
-        outputz = HPW['x']
-    elif (outputz < -zG*dPW):
-        outputz = LPW['x']
+        outputz = HPW['z']
+    elif (outputz <= -0.45*dPW):
+        outputz = LPW['z']
     else:
-        outputz = MPW['x'] + outputz
+        outputz = MPW['z'] + outputz
 
     return {'x': outputx, 'y': outputy, 'z': outputz}
 
