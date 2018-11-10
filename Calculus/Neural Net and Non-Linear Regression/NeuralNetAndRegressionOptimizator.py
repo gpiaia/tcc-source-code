@@ -7,9 +7,10 @@ from sklearn.metrics import mean_squared_error
 from scipy.optimize import least_squares
 
 # Carrega os elementos do dataset
-dataset = pd.read_csv('../../Datasets/data_pid_0111.csv')
+dataset = pd.read_csv('../../Datasets/data_k1_ensaio.csv')
 z = dataset['kPosicaoz']
 sp = dataset['SetPointz']
+
 t = dataset['Tempo'].sub(dataset['Tempo'][0])
 
 x = pd.concat([z, sp], axis=1, sort=False)
@@ -53,7 +54,7 @@ print('Erro RMS:{0}'.format(err_rms))
 # plt.xlabel('Sequência de Pulsos')
 # plt.ylabel('Largura de Pulso [$\mu$S]')
 # plt.title('Comparação entre as Larguras de Pulso Reais e as Preditas pela Rede Neural Artificial')
-# plt.legend(loc=4)
+# plt.legend(loc=1)
 # plt.grid(True)
 # plt.savefig("position.png")
 # plt.show()
@@ -69,18 +70,34 @@ ax[0].plot(y_fit, label='Real', color='k', ls='solid')
 ax[0].plot(y_predicted, label='Predita pela RNA', color='0.75', ls='solid')
 ax[0].set_xlabel('Sequência de Pulsos', **axis_font)
 ax[0].set_ylabel('Largura de Pulso [$\mu$S]', **axis_font)
-ax[0].set_title('Comparação entre as Larguras de Pulso Reais e as Preditas pela Rede Neural Artificial', **title_font)
+ax[0].set_title('(a) Larguras de Pulso Reais e as Preditas pela RNA', **title_font)
 ax[0].tick_params(axis='both', which='major', labelsize=16)
-ax[0].legend(loc=2, borderpad=1.5, fontsize=16)
+ax[0].set_xlim(0, 3500)
+ax[0].legend(loc=0, borderpad=1.5, fontsize=16)
 ax[0].grid(True)
 
-ax[1].plot(y_fit, label='Real', color='k', ls='solid')
-ax[1].plot(y_predicted, label='Predita pela RNA', color='0.75', ls='solid')
+# Neural Result
+data_rna = pd.read_csv('../../Datasets/data_neural_ensaio.csv')
+t = data_rna['Tempo'].sub(data_rna['Tempo'][0])
+sp = data_rna['SetPointz']
+sp[0] = 0
+
+# Anti Wind
+data_pidaw = pd.read_csv('../../Datasets/data_antiwind_ensaio.csv')
+t1 = data_pidaw['Tempo'].sub(data_pidaw['Tempo'][0])
+
+# Simulação
+
+ax[1].plot(t, data_rna['kPosicaoz'], label=r'$\theta_x$z RNA', color='k', ls='solid')
+ax[1].plot(t1, data_pidaw['kPosicaoz'], label=r'$\theta_x$z Ziegler-Nichols', color='0.75', ls='solid')
+ax[1].plot(t1, data_pidaw['kPosicaoz'], label=r'$\theta_x$z Ziegler-Nichols', color='0.25', ls='solid')
+ax[1].plot(t, sp, label='Referência', color='k', linestyle='--')
 ax[1].set_xlabel('Sequência de Pulsos', **axis_font)
 ax[1].set_ylabel('Largura de Pulso [$\mu$S]', **axis_font)
-ax[1].set_title('Comparação entre as Larguras de Pulso Reais e as Preditas pela Rede Neural Artificial', **title_font)
+ax[1].set_title('(b) Resposta ao Degrau com Sintonia Clássica e via RNA', **title_font)
 ax[1].tick_params(axis='both', which='major', labelsize=16)
-ax[1].legend(loc=2, borderpad=1.5, fontsize=16)
+ax[1].set_xlim(0, 67)
+ax[1].legend(loc=0, borderpad=1.5, fontsize=16)
 ax[1].grid(True)
 
 
@@ -89,15 +106,17 @@ plt.rc('text', usetex=True)
 plt.rc('xtick', labelsize=18)
 plt.rc('ytick', labelsize=18)
 plt.rc('axes', labelsize=18)
-plt.subplots_adjust(left=0.04, right=0.99, top=0.96, bottom=0.05)
+plt.subplots_adjust(left=0.06, right=0.99, top=0.96, bottom=0.07)
 plt.savefig("../../../Monografia/resultados/img/neural_output.pdf")
 
 
 ################################## Optimization ################################
 
-data = pd.read_csv('../../Datasets/data_PIDk5.csv')
+# data = pd.read_csv('../../Datasets/data_neural_ensaio.csv')
+# z = data['kPosicaoz']
+data = pd.read_csv('data.csv')
+z = data['Posicaoz']
 
-z = data['kPosicaoz']
 sp = dataset['SetPointz']
 t = dataset['Tempo'].sub(dataset['Tempo'][0])
 
@@ -134,7 +153,12 @@ def fun(x, n_t, y) :
 	n += 1
 	return u - y
 
-x0 = [2.25,0.444078947368421, 0]
+
+kp = 29.192682465627243
+ki = 20.70403011746613
+kd = 10.290420569133603
+
+x0 = [kp, kp/ki,kd/kp]
 
 res_robust = least_squares(fun, x0, loss='arctan', f_scale=0.1, args=(n_train, y_pred))
 

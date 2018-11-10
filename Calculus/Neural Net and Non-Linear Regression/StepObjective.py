@@ -4,8 +4,8 @@ from scipy.integrate import odeint
 import csv
 
 # process model
-Kp = 30
-taup = 3
+Kp = 35
+taup = 10
 def process(y,t,u,Kp,taup):
     # Kp = process gain
     # taup = process time constant
@@ -13,7 +13,7 @@ def process(y,t,u,Kp,taup):
     return dydt
 
 # specify number of steps
-ns = 500
+ns = 3500
 # define time points
 t = np.linspace(0,ns/50,ns+1)
 delta_t = t[1]-t[0]

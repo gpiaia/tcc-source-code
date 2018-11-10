@@ -24,16 +24,16 @@ ESC_GPIOy = 16
 ESC_GPIOx = 20
 
 # Pulses Widths
-zG = 1.75
-dPW = 70
+zG = 2
+dPW = 100
 sPW = 1000
 lPW = 90
 
 # Pulses Widths arrays
-StopPW = {'x': sPW,               'y': sPW,                'z': sPW} 
-HPW    = {'x': sPW + lPW + zG*dPW,   'y': sPW + lPW + zG*dPW,    'z': sPW + lPW + zG*dPW} # Hight Pulse Width
-MPW    = {'x': sPW + lPW + 0.45*dPW,    'y': sPW + lPW + 0.45*dPW,   'z': sPW + lPW + 0.45*dPW} # Average  Pulse Width
-LPW    = {'x': sPW + lPW ,              'y': sPW + lPW,               'z': sPW + lPW} # low Pulse Width
+StopPW = {'x': sPW,                  'y': sPW,                    'z': sPW} 
+HPW    = {'x': sPW + lPW + zG*dPW,   'y': sPW + lPW + zG*dPW,     'z': sPW + lPW + zG*dPW} # Hight Pulse Width
+MPW    = {'x': sPW + lPW + 0.45*dPW, 'y': sPW + lPW +  0.45*dPW,  'z': sPW + lPW + dPW} # Average  Pulse Width
+LPW    = {'x': sPW + lPW ,           'y': sPW + lPW,              'z': sPW + lPW} # low Pulse Width
 
 pidoutput = MPW
 pidx = 0
@@ -68,16 +68,16 @@ kalmanY.setAngle(kalAngleY)
 kalmanZ.setAngle(kalAngleZ)
 
 # determined by calibration: offset of the gyro; take away to reduce drift.
-offset_GYRO = [(( -1.4961832061068705 - 1.49196158901234)/2), 
-               (( 1.015267175572519 + 1.0198711686928483)/2),
-               (( -1.236641221374046 - 1.2385469091787231)/2)]
+offset_GYRO = [((-1.5038167938931295-1.499391320990328)/2), 
+               ((0.9618320610687024 + 0.9609864992485626)/2),
+               ((-0.8702290076335878 -0.8714008716032413)/2)]
 
 
 def Motors(Pulse, state):
-    pi.set_servo_pulsewidth(ESC_GPIOx, int(Pulse['x']))
+    #pi.set_servo_pulsewidth(ESC_GPIOx, int(Pulse['x']))
     if (state == 0) :
         time.sleep(5)
-    pi.set_servo_pulsewidth(ESC_GPIOy, int(Pulse['y']))
+    #pi.set_servo_pulsewidth(ESC_GPIOy, int(Pulse['y']))
     if (state == 0) :
         time.sleep(5)
     pi.set_servo_pulsewidth(ESC_GPIOz, int(Pulse['z']))  
@@ -98,9 +98,9 @@ def PIDController(P, I, D, SetPoint):
     pidz.SetPoint = SetPoint['z']
     pidz.setSampleTime(SampleTime)
 
-    #pidx.setWindup(20)
-    #pidy.setWindup(20)
-    #pidz.setWindup(20)
+    #pidx.setWindup(10)
+    #pidy.setWindup(10)
+    pidz.setWindup(10)
 
 
 def mainTask():
@@ -125,26 +125,24 @@ def mainTask():
     pidy.update(kalAngleY)
     pidz.update(kalAngleZ)
 
-    if (pidx.output >= dPW):
+    outputx = MPW['x'] + pidx.output
+    outputy = MPW['y'] + pidy.output
+    outputz = MPW['z'] + pidz.output
+
+    if (outputx >= HPW['x']):
         outputx = HPW['x']
-    elif (pidz.output < -dPW):
+    elif (outputx < LPW['x']):
         outputx = LPW['x']
-    else:
-        outputx = MPW['x'] + pidx.output
 
-    if (pidy.output >= dPW):
-        outputy = HPW['x']
-    elif (pidy.output < -dPW):
-        outputy = LPW['x']
-    else:
-        outputy = MPW['x'] + pidy.output
+    if (outputy >= HPW['y']):
+        outputy = HPW['y']
+    elif (outputy < LPW['y']):
+        outputy = LPW['y']
 
-    if (pidz.output >= zG*dPW):
-        outputz = HPW['x']
-    elif (pidz.output < -zG*dPW):
-        outputz = LPW['x']
-    else:
-        outputz = MPW['x'] + pidz.output
+    if (outputz >= HPW['z']):
+        outputz = HPW['z']
+    elif (outputz < LPW['z']):
+        outputz = LPW['z']
 
     pidoutput = {'x': outputx, 'y': outputy, 'z': outputz}
 
@@ -170,8 +168,8 @@ def mainTask():
                          'Tempo': time.time()})
     
     #print('PW:' + str(outputx) + ',' + str(outputy) + ',' + str(outputz))
-    print('PID:' + str(pidx.output) + ',' + str(pidy.output) + ',' + str(pidz.output))
-    print('Pos:' + str(kalAngleX) + ',' + str(kalAngleY) + ',' + str(kalAngleZ))
+    print('PID:' + str(pidz.output))
+    print('Pos z:' + str(kalAngleZ))
     threading.Timer(0.0015, mainTask).start()
 
 def main():
@@ -179,7 +177,7 @@ def main():
 
     argList = sys.argv
 
-    if int(argList[5])== 1:  
+    if int(argList[1])== 1:  
         Motors(StopPW, 1)
         time.sleep(1)
         Motors(MPW, 0)
@@ -192,12 +190,34 @@ def main():
                       'Tempo']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
-# 3 0.05 3
-    P = {'x': 3, 'y': 3, 'z': float(argList[1])}
-    I = {'x': 1, 'y': 1, 'z': float(argList[2])}
-    D = {'x': 3, 'y': 3, 'z': float(argList[3])}
-    SetPoint = {'x': 0, 'y': 0, 'z': float(argList[4])}
-    SetPointInit = {'x': 0, 'y': 0, 'z': 0}
+
+    # P =            {'x': 4.05, 'y': 1.3,   'z': 2}
+    # I =            {'x': 0,    'y': 6.54,  'z': 10.16}
+    # D =            {'x': 0,    'y': 0.065, 'z': 0.134}
+    # SetPoint =     {'x': 0,    'y': 0,     'z': 45}
+
+    #Classico
+    # P =            {'x': 0,  'y': 0,   'z':1.2}
+    # I =            {'x': 0,  'y': 0,   'z':10}
+    # D =            {'x': 0,  'y': 0,   'z':2.5}
+    # SetPoint =     {'x': 0,  'y': 0,   'z': 45}
+
+    #Neural
+    # P =            {'x': 0,  'y': 0,   'z':1.2}
+    # I =            {'x': 0,  'y': 0,   'z':2}
+    # D =            {'x': 0,  'y': 0,   'z':0.25}
+    # SetPoint =     {'x': 0,  'y': 0,   'z': 45}
+
+    # P =            {'x': 10,  'y': 10,   'z': 29.19268246562724/10}
+    # I =            {'x': 5,  'y': 5,  'z':20.7/10}
+    # D =            {'x': 2,  'y': 2,   'z':10.29/10}
+    # SetPoint =     {'x': 0,  'y': 0,   'z': 0}
+
+
+    P =            {'x': 0,  'y': 0,   'z':1.2}
+    I =            {'x': 0,  'y': 0,   'z':10}
+    D =            {'x': 0,  'y': 0,   'z':2.5}
+    SetPoint =     {'x': 0,  'y': 0,   'z': 45}
 
     print('Controle Iniciando em 5s')
     time.sleep(5)

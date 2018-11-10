@@ -3,21 +3,21 @@ from matplotlib.font_manager import FontProperties
 import pandas as pd
 import numpy as np
 
-data = pd.read_csv('../Datasets/data_drift.csv')
+data = pd.read_csv('../Datasets/data.csv')
 
 
 #%%%%%%%%%%%%%%%%%%%%%% Data %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-# medianx = data['Gyrox'].median()
-# mediany = data['Gyroy'].median()
-# medianz = data['Gyroz'].median()
+medianx = data['Gyrox'].median()
+mediany = data['Gyroy'].median()
+medianz = data['Gyroz'].median()
 
-# meanx = data['Gyrox'].mean()
-# meany = data['Gyroy'].mean()
-# meanz = data['Gyroz'].mean()
+meanx = data['Gyrox'].mean()
+meany = data['Gyroy'].mean()
+meanz = data['Gyroz'].mean()
 
-# print('Mediana: {0}, {1}, {2}'.format(medianx, mediany, medianz))
-# print('Media: {0}, {1}, {2}'.format(meanx, meany, meanz))
+print('Mediana: {0}, {1}, {2}'.format(medianx, mediany, medianz))
+print('Media: {0}, {1}, {2}'.format(meanx, meany, meanz))
 
 # xx = np.full(len(data), medianx)
 # yy = np.full(len(data), mediany)
@@ -44,7 +44,7 @@ ax[0][0].set_xlabel('Número de Amostras', **axis_font)
 ax[0][0].set_ylabel('Velocidade Angular Instantânea [°/s]', **axis_font)
 ax[0][0].set_title('(a) Velocidade Angular Instantânea nos Três Eixos', **title_font)
 ax[0][0].tick_params(axis='both', which='major', labelsize=16)
-ax[0][0].set_xlim(0, 110000)
+#ax[0][0].set_xlim(0, 110000)
 ax[0][0].legend(loc=1, fontsize=16)
 ax[0][0].grid(True)
 
@@ -77,4 +77,5 @@ plt.rc('xtick', labelsize=18)
 plt.rc('ytick', labelsize=18)
 plt.rc('axes', labelsize=18)
 plt.subplots_adjust(left=0.06, right=0.99, top=0.97, bottom=0.055)
-plt.savefig("../../Monografia/metodologia/img/bias_correction.pdf")
+#plt.savefig("../../Monografia/metodologia/img/bias_correction.pdf")
+plt.show()

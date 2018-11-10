@@ -69,16 +69,16 @@ kalmanY.setAngle(kalAngleY)
 kalmanZ.setAngle(kalAngleZ)
 
 # determined by calibration: offset of the gyro; take away to reduce drift.
-offset_GYRO = [((-1.4198473282442747-1.4233454586213155)/2), 
-               ((0.9083969465648856 + 0.9096207708659444)/2),
-               ((-0.9236641221374046 -0.9252346314907317)/2)]
+offset_GYRO = [((-1.5038167938931295-1.499391320990328)/2), 
+               ((0.9618320610687024 + 0.9609864992485626)/2),
+               ((-0.8702290076335878 -0.8714008716032413)/2)]
 
 
 def Motors(Pulse, state):
-    pi.set_servo_pulsewidth(ESC_GPIOx, int(Pulse['x']))
+    #pi.set_servo_pulsewidth(ESC_GPIOx, int(Pulse['x']))
     if (state == 0) :
         time.sleep(5)
-    pi.set_servo_pulsewidth(ESC_GPIOy, int(Pulse['y']))
+    #pi.set_servo_pulsewidth(ESC_GPIOy, int(Pulse['y']))
     if (state == 0) :
         time.sleep(5)
     pi.set_servo_pulsewidth(ESC_GPIOz, int(Pulse['z']))  

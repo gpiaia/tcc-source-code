@@ -12,6 +12,10 @@ clc             % Limpa todos os dados da tela
 
 %--------------------------------------------------------------------------
 
+%%
+plot(simout.Time, simout.Data(1))
+
+%%
 load('C:\Users\Gpiaia\Google Drive\Eng. de Controle e Automacao\TCC\Code\Calculus\Matlab\ModeloSatelite.mat')
 
 K = 10;
