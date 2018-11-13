@@ -13,7 +13,7 @@ def process(y,t,u,Kp,taup):
     return dydt
 
 # specify number of steps
-ns = 3500
+ns = 4500
 # define time points
 t = np.linspace(0,ns/50,ns+1)
 delta_t = t[1]-t[0]
@@ -75,6 +75,7 @@ D[ns] = D[ns-1]
 
 
 np.savetxt("data.csv", pv, delimiter=",", header="Posicaoz", comments="")
+np.savetxt("tempo.csv", t, delimiter=",", header="Tempo", comments="")
 
 # plot results
 plt.figure(1)

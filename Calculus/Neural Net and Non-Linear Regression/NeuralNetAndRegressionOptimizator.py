@@ -62,23 +62,23 @@ print('Erro RMS:{0}'.format(err_rms))
 fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(18,10))
 
 # Set the font dictionaries (for plot title and axis titles)
-title_font = {'fontname':'Times', 'size':'20', 'color':'black', 'weight':'normal',
+title_font = {'fontname':'Times', 'size':'24', 'color':'black', 'weight':'normal',
   'verticalalignment':'bottom', 'usetex': 'true'} # Bottom vertical alignment for more space
-axis_font = {'fontname':'Times', 'size':'20', 'usetex': 'true'}
+axis_font = {'fontname':'Times', 'size':'24', 'usetex': 'true'}
 
-ax[0].plot(y_fit, label='Real', color='k', ls='solid')
-ax[0].plot(y_predicted, label='Predita pela RNA', color='0.75', ls='solid')
-ax[0].set_xlabel('Sequência de Pulsos', **axis_font)
-ax[0].set_ylabel('Largura de Pulso [$\mu$S]', **axis_font)
-ax[0].set_title('(a) Larguras de Pulso Reais e as Preditas pela RNA', **title_font)
-ax[0].tick_params(axis='both', which='major', labelsize=16)
-ax[0].set_xlim(0, 3500)
-ax[0].legend(loc=0, borderpad=1.5, fontsize=16)
-ax[0].grid(True)
+ax[1].plot(y_fit, label='Real', color='k', ls='solid')
+ax[1].plot(y_predicted, label='Predita pela RNA', color='0.75', ls='solid')
+ax[1].set_xlabel('Sequência de Pulsos', **axis_font)
+ax[1].set_ylabel('Largura de Pulso [$\mu$S]', **axis_font)
+ax[1].set_title('(b) Larguras de Pulso Reais e as Preditas pela RNA', **title_font)
+ax[1].tick_params(axis='both', which='major', labelsize=18)
+ax[1].set_xlim(0, 3500)
+ax[1].legend(loc=0, borderpad=1.5, fontsize=18)
+ax[1].grid(True)
 
 # Neural Result
 data_rna = pd.read_csv('../../Datasets/data_neural_ensaio.csv')
-t = data_rna['Tempo'].sub(data_rna['Tempo'][0])
+t_rna = data_rna['Tempo'].sub(data_rna['Tempo'][0])
 sp = data_rna['SetPointz']
 sp[0] = 0
 
@@ -87,18 +87,20 @@ data_pidaw = pd.read_csv('../../Datasets/data_antiwind_ensaio.csv')
 t1 = data_pidaw['Tempo'].sub(data_pidaw['Tempo'][0])
 
 # Simulação
+data_obj = pd.read_csv('data.csv')
+data_tmp = pd.read_csv('tempo.csv')
 
-ax[1].plot(t, data_rna['kPosicaoz'], label=r'$\theta_x$z RNA', color='k', ls='solid')
-ax[1].plot(t1, data_pidaw['kPosicaoz'], label=r'$\theta_x$z Ziegler-Nichols', color='0.75', ls='solid')
-ax[1].plot(t1, data_pidaw['kPosicaoz'], label=r'$\theta_x$z Ziegler-Nichols', color='0.25', ls='solid')
-ax[1].plot(t, sp, label='Referência', color='k', linestyle='--')
-ax[1].set_xlabel('Sequência de Pulsos', **axis_font)
-ax[1].set_ylabel('Largura de Pulso [$\mu$S]', **axis_font)
-ax[1].set_title('(b) Resposta ao Degrau com Sintonia Clássica e via RNA', **title_font)
-ax[1].tick_params(axis='both', which='major', labelsize=16)
-ax[1].set_xlim(0, 67)
-ax[1].legend(loc=0, borderpad=1.5, fontsize=16)
-ax[1].grid(True)
+#ax[1].plot(t_rna, data_rna['kPosicaoz'], label=r'$\theta_x$z RNA', color='k', ls='solid')
+ax[0].plot(t, dataset['kPosicaoz'], label=r'$\theta_z$ Treinamento', color='0.75', ls='solid')
+ax[0].plot(data_tmp['Tempo'], data_obj['Posicaoz'], label=r'$\theta_z$ Objetivo', color='0.25', ls='solid')
+ax[0].plot(t_rna, sp, label='Referência', color='k', linestyle='--')
+ax[0].set_xlabel('Tempo [s]', **axis_font)
+ax[0].set_ylabel('Posição Angular Instantânea [°]', **axis_font)
+ax[0].set_title('(a) Resposta ao Degrau com Sintonia Clássica e via RNA', **title_font)
+ax[0].tick_params(axis='both', which='major', labelsize=18)
+ax[0].set_xlim(0, 75)
+ax[0].legend(loc=0, borderpad=1.5, fontsize=18)
+ax[0].grid(True)
 
 
 plt.rc('font', family='serif', serif='Times')
@@ -106,69 +108,69 @@ plt.rc('text', usetex=True)
 plt.rc('xtick', labelsize=18)
 plt.rc('ytick', labelsize=18)
 plt.rc('axes', labelsize=18)
-plt.subplots_adjust(left=0.06, right=0.99, top=0.96, bottom=0.07)
+plt.subplots_adjust(left=0.06, right=0.98, top=0.95, bottom=0.07)
 plt.savefig("../../../Monografia/resultados/img/neural_output.pdf")
 
 
 ################################## Optimization ################################
 
-# data = pd.read_csv('../../Datasets/data_neural_ensaio.csv')
-# z = data['kPosicaoz']
-data = pd.read_csv('data.csv')
-z = data['Posicaoz']
+# # data = pd.read_csv('../../Datasets/data_neural_ensaio.csv')
+# # z = data['kPosicaoz']
+# data = pd.read_csv('data.csv')
+# z = data['Posicaoz']
 
-sp = dataset['SetPointz']
-t = dataset['Tempo'].sub(dataset['Tempo'][0])
+# sp = dataset['SetPointz']
+# t = dataset['Tempo'].sub(dataset['Tempo'][0])
 
-dt = t[5]-t[400]
-x = pd.concat([z, sp], axis=1, sort=False)
+# dt = t[5]-t[400]
+# x = pd.concat([z, sp], axis=1, sort=False)
 
-# 80% do dataset é usado para treinar a RNA
-lenz = int(len(z)/6)
-fitlen = int(0.8*lenz)
-trainlen = int(0.2*lenz)
+# # 80% do dataset é usado para treinar a RNA
+# lenz = int(len(z)/6)
+# fitlen = int(0.8*lenz)
+# trainlen = int(0.2*lenz)
 
-sp = dataset['SetPointz']
+# sp = dataset['SetPointz']
 
-err_sum = 0
-spn = sp[100] 
-n = 0
+# err_sum = 0
+# spn = sp[100] 
+# n = 0
 
-z_train = z[0:fitlen]
-x_train = x[0:fitlen]
-n_train = pd.DataFrame(np.linspace(0, len(z_train), len(z_train)+1))
+# z_train = z[0:fitlen]
+# x_train = x[0:fitlen]
+# n_train = pd.DataFrame(np.linspace(0, len(z_train), len(z_train)+1))
 
-y_pred = clf.predict(x_train)
-y_pred = np.array(y_pred[:], dtype=np.float)
+# y_pred = clf.predict(x_train)
+# y_pred = np.array(y_pred[:], dtype=np.float)
 
-def fun(x, n_t, y) :
-	global n, err_sum, dt, spn
-	err = spn - z_train[int(n_t[0][n])]
-	if(n>0) :
-		err_sum += err
-		err_int =  (z_train[int(n_t[0][n])] -  z_train[int(n_t[0][n-1])])/(dt)
-		u = x[0] * err + (x[0]/x[1])*err_sum*dt - x[0]*x[2]*err_int
-	else : 
-		u = 0
-	n += 1
-	return u - y
-
-
-kp = 29.192682465627243
-ki = 20.70403011746613
-kd = 10.290420569133603
-
-x0 = [kp, kp/ki,kd/kp]
-
-res_robust = least_squares(fun, x0, loss='arctan', f_scale=0.1, args=(n_train, y_pred))
+# def fun(x, n_t, y) :
+# 	global n, err_sum, dt, spn
+# 	err = spn - z_train[int(n_t[0][n])]
+# 	if(n>0) :
+# 		err_sum += err
+# 		err_int =  (z_train[int(n_t[0][n])] -  z_train[int(n_t[0][n-1])])/(dt)
+# 		u = x[0] * err + (x[0]/x[1])*err_sum*dt - x[0]*x[2]*err_int
+# 	else : 
+# 		u = 0
+# 	n += 1
+# 	return u - y
 
 
-def funK(a, b, c):
-	return (a, b, c)
+# kp = 29.192682465627243
+# ki = 20.70403011746613
+# kd = 10.290420569133603
 
-K = funK(*res_robust.x)
-Kp = K[0]
-Ki =Kp/K[1]
-Kd = Kp*K[2]
+# x0 = [kp, kp/ki,kd/kp]
 
-print('Kp ={0}, Ki ={1}, Kd = {2}'.format(Kp, Ki, Kd))
+# res_robust = least_squares(fun, x0, loss='arctan', f_scale=0.1, args=(n_train, y_pred))
+
+
+# def funK(a, b, c):
+# 	return (a, b, c)
+
+# K = funK(*res_robust.x)
+# Kp = K[0]
+# Ki =Kp/K[1]
+# Kd = Kp*K[2]
+
+# print('Kp ={0}, Ki ={1}, Kd = {2}'.format(Kp, Ki, Kd))
